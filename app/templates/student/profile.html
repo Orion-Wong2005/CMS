@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}个人信息修改 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">修改个人信息</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">学号</label>
+                        <input type="text" class="form-control" value="{{ student.student_id }}" readonly>
+                        <div class="form-text">学号不可修改</div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">姓名</label>
+                        <input type="text" class="form-control" value="{{ student.name }}" readonly>
+                        <div class="form-text">姓名不可修改</div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">性别</label>
+                        <input type="text" class="form-control" value="{{ student.gender }}" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">专业</label>
+                        <input type="text" class="form-control" value="{{ student.major }}" readonly>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">班级</label>
+                        <input type="text" class="form-control" value="{{ student.class_name }}" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="phone" class="form-label">手机号</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" 
+                               value="{{ student.phone }}">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label">邮箱</label>
+                    <input type="email" class="form-control" id="email" name="email" 
+                           value="{{ student.email }}">
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                    <a href="{{ url_for('student_bp.index') }}" class="btn btn-secondary">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
