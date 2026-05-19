@@ -64,6 +64,12 @@
                                     <i class="bi bi-book me-1"></i>课程管理
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'admin_bp.schedule_list' or request.endpoint == 'admin_bp.schedule_add' or request.endpoint == 'admin_bp.schedule_edit' %}active{% endif %}" 
+                                   href="{{ url_for('admin_bp.schedule_list') }}">
+                                    <i class="bi bi-calendar3 me-1"></i>排课管理
+                                </a>
+                            </li>
                         {% elif session.role == 'teacher' %}
                             <!-- 教师菜单 -->
                             <li class="nav-item">
@@ -76,6 +82,12 @@
                                 <a class="nav-link {% if request.endpoint == 'teacher_bp.my_courses' or request.endpoint == 'teacher_bp.course_students' or request.endpoint == 'teacher_bp.grade_edit' or request.endpoint == 'teacher_bp.grade_batch' %}active{% endif %}" 
                                    href="{{ url_for('teacher_bp.my_courses') }}">
                                     <i class="bi bi-book me-1"></i>我的课程
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'teacher_bp.my_schedule' %}active{% endif %}" 
+                                   href="{{ url_for('teacher_bp.my_schedule') }}">
+                                    <i class="bi bi-calendar3 me-1"></i>我的课表
                                 </a>
                             </li>
                         {% elif session.role == 'student' %}
@@ -102,6 +114,12 @@
                                 <a class="nav-link {% if request.endpoint == 'student_bp.grades' %}active{% endif %}" 
                                    href="{{ url_for('student_bp.grades') }}">
                                     <i class="bi bi-clipboard-check me-1"></i>我的成绩
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'student_bp.my_schedule' %}active{% endif %}" 
+                                   href="{{ url_for('student_bp.my_schedule') }}">
+                                    <i class="bi bi-calendar3 me-1"></i>我的课表
                                 </a>
                             </li>
                         {% endif %}
