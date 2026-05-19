@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}成绩录入 - {{ course.course_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">成绩录入 - {{ course.course_name }}</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">学号</label>
+                        <input type="text" class="form-control" value="{{ student.student_id }}" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">姓名</label>
+                        <input type="text" class="form-control" value="{{ student.name }}" readonly>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="grade" class="form-label">成绩 *</label>
+                    <input type="number" step="0.5" min="0" max="100" class="form-control" 
+                           id="grade" name="grade" 
+                           value="{{ grade.grade if grade and grade.grade else '' }}" 
+                           placeholder="请输入0-100之间的成绩" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="remark" class="form-label">备注</label>
+                    <textarea class="form-control" id="remark" name="remark" rows="3" 
+                              placeholder="可选">{{ grade.remark if grade and grade.remark else '' }}</textarea>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <a href="{{ url_for('teacher_bp.course_students', course_id=course.course_id) }}" 
+                       class="btn btn-secondary">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
