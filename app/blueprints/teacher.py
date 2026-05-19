@@ -371,3 +371,39 @@ def profile():
             flash(f'修改失败：{str(e)}', 'danger')
     
     return render_template('teacher/profile.html', teacher=teacher)
+
+# ==============================
+# 我的课表
+# ==============================
+@teacher_bp.route('/schedule')
+@teacher_required
+def my_schedule():
+    """查看个人课表"""
+    teacher = Teacher.query.filter_by(user_id=session['user_id']).first()
+    
+    # 查询教师所有教授课程的排课
+    courses = Course.query.filter_by(teacher_id=teacher.teacher_id).all()
+    
+    # 初始化课表表格（7天 x 12节）
+    schedule_table = [[None for _ in range(8)] for _ in range(13)]  # 行：节次1-12，列：星期1-7
+    
+    for course in courses:
+        schedules = Schedule.query.filter_by(course_id=course.course_id).all()
+        
+        for schedule in schedules:
+            day = schedule.day_of_week
+            start = int(schedule.start_time)
+            end = int(schedule.end_time)
+            
+            # 将课程信息填入课表
+            for period in range(start, end + 1):
+                schedule_table[period][day] = {
+                    'course_name': course.course_name,
+                    'classroom': schedule.classroom,
+                    'rowspan': end - start + 1,
+                    'is_first': (period == start)
+                }
+    
+    return render_template('teacher/my_schedule.html',
+                          schedule_table=schedule_table,
+                          days=['周一', '周二', '周三', '周四', '周五', '周六', '周日'])
