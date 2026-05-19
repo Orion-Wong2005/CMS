@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}批量成绩录入 - {{ course.course_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>批量成绩录入 - {{ course.course_name }}</h2>
+        <a href="{{ url_for('teacher_bp.course_students', course_id=course.course_id) }}" 
+           class="btn btn-secondary">返回</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>成绩</th>
+                            <th>备注</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in student_list %}
+                        <tr>
+                            <td>{{ student.student_id }}</td>
+                            <td>{{ student.name }}</td>
+                            <td>
+                                <input type="number" step="0.5" min="0" max="100" 
+                                       class="form-control form-control-sm" 
+                                       name="grade_{{ student.student_id }}" 
+                                       value="{{ student.grade if student.grade else '' }}">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm" 
+                                       name="remark_{{ student.student_id }}" 
+                                       value="{{ student.remark if student.remark else '' }}">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">保存所有成绩</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
