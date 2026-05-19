@@ -347,3 +347,27 @@ def grade_export(course_id):
     response.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     
     return response
+
+# ==============================
+# 个人信息修改
+# ==============================
+@teacher_bp.route('/profile', methods=['GET', 'POST'])
+@teacher_required
+def profile():
+    """修改个人信息"""
+    teacher = Teacher.query.filter_by(user_id=session['user_id']).first()
+    
+    if request.method == 'POST':
+        # 只允许修改联系方式，不允许修改工号、姓名等关键信息
+        teacher.phone = request.form.get('phone', '').strip()
+        teacher.email = request.form.get('email', '').strip()
+        
+        try:
+            db.session.commit()
+            flash('个人信息修改成功', 'success')
+            return redirect(url_for('teacher_bp.index'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'修改失败：{str(e)}', 'danger')
+    
+    return render_template('teacher/profile.html', teacher=teacher)
