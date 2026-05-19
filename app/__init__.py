@@ -28,5 +28,18 @@ def create_app(config_class=Config):
     app.register_blueprint(enrollment_bp, url_prefix='/enrollment')
     app.register_blueprint(grade_bp, url_prefix='/grade')
     app.register_blueprint(schedule_bp, url_prefix='/schedule')
+
+    # ==============================
+    # 全局错误处理器
+    # ==============================
+    @app.errorhandler(403)
+    def forbidden_error(error):
+        """403 无权限错误"""
+        return render_template('common/403.html'), 403
+    
+    @app.errorhandler(404)
+    def page_not_found_error(error):
+        """404 页面不存在错误"""
+        return render_template('common/404.html'), 404
     
     return app
