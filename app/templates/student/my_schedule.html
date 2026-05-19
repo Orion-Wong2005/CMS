@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}我的课表 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">我的课表</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 80px;">节次</th>
+                            {% for day in days %}
+                            <th>{{ day }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for period in range(1, 13) %}
+                        <tr>
+                            <td class="align-middle">{{ period }}</td>
+                            {% for day in range(1, 8) %}
+                                {% set course = schedule_table[period][day] %}
+                                {% if course %}
+                                    {% if course.is_first %}
+                                    <td rowspan="{{ course.rowspan }}" class="align-middle bg-primary text-white">
+                                        <strong>{{ course.course_name }}</strong><br>
+                                        <small>{{ course.teacher }}</small><br>
+                                        <small>{{ course.classroom }}</small>
+                                    </td>
+                                    {% endif %}
+                                {% else %}
+                                <td></td>
+                                {% endif %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
