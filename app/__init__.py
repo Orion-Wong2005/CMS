@@ -41,5 +41,10 @@ def create_app(config_class=Config):
     def page_not_found_error(error):
         """404 页面不存在错误"""
         return render_template('common/404.html'), 404
-    
+
+    @app.errorhandler(500)
+    def internal_server_error(error):
+        """500 服务器内部错误"""
+        return render_template('common/500.html'), 500
+        
     return app
