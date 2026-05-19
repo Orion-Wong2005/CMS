@@ -1,0 +1,36 @@
+## 模型使用说明
+
+### 1. 关联查询示例
+```python
+# 查询某个学生的所有选课及课程信息
+student = Student.query.get('2023001')
+for enrollment in student.enrollments:
+    print(f"课程：{enrollment.course.course_name}，教师：{enrollment.course.teacher.name}")
+
+# 查询某个教师的所有课程及选课学生
+teacher = Teacher.query.get('T001')
+for course in teacher.courses:
+    print(f"课程：{course.course_name}，选课人数：{len(course.enrollments)}")
+    for enrollment in course.enrollments:
+        print(f"  学生：{enrollment.student.name}")
+```
+
+### 2. 数据库迁移命令
+在项目根目录执行以下命令，自动创建数据库表：
+```bash
+# 初始化迁移环境（只需要执行一次）
+flask db init
+
+# 生成迁移脚本
+flask db migrate -m "initial tables"
+
+# 应用迁移到数据库
+flask db upgrade
+```
+
+### 3. 重要说明
+- 所有外键的`ondelete`行为与MySQL建表语句完全一致
+- 关联关系使用`backref`设置，支持双向查询
+- `cascade='all, delete-orphan'`表示删除父对象时自动删除子对象
+- 所有字段都添加了与数据库一致的注释
+- 唯一约束和索引都已正确定义
