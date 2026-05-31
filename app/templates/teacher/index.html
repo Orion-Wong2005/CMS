@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}教师首页 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">欢迎回来，{{ teacher.name }}老师</h2>
+    
+    <!-- 个人信息卡片 -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">个人信息</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"><strong>工号：</strong>{{ teacher.teacher_id }}</div>
+                <div class="col-md-3"><strong>姓名：</strong>{{ teacher.name }}</div>
+                <div class="col-md-3"><strong>性别：</strong>{{ teacher.gender }}</div>
+                <div class="col-md-3"><strong>院系：</strong>{{ teacher.department }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-3"><strong>职称：</strong>{{ teacher.title }}</div>
+                <div class="col-md-3"><strong>手机号：</strong>{{ teacher.phone }}</div>
+                <div class="col-md-6"><strong>邮箱：</strong>{{ teacher.email }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 教学统计卡片 -->
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">授课课程</h5>
+                    <h1 class="display-4">{{ course_count }}</h1>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('teacher_bp.my_courses') }}" class="text-white">查看我的课程</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">授课学生</h5>
+                    <h1 class="display-4">{{ total_students }}</h1>
+                </div>
+                <div class="card-footer">
+                    <span>本学期授课总人数</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">待录入成绩</h5>
+                    <h1 class="display-4">{{ pending_courses }}</h1>
+                </div>
+                <div class="card-footer">
+                    <span>门课程待录入成绩</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 快速操作 -->
+    <div class="card">
+        <div class="card-header">
+            <h5>快速操作</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <a href="{{ url_for('teacher_bp.my_courses') }}" class="btn btn-success w-100">查看我的课程</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

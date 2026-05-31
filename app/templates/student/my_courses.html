@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}我的课程 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>我的课程</h2>
+        <a href="{{ url_for('student_bp.course_list') }}" class="btn btn-primary">去选课</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>课程编号</th>
+                        <th>课程名称</th>
+                        <th>学分</th>
+                        <th>授课教师</th>
+                        <th>选课时间</th>
+                        <th>成绩</th>
+                        <th>绩点</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in course_list %}
+                    <tr>
+                        <td>{{ item.course.course_id }}</td>
+                        <td>{{ item.course.course_name }}</td>
+                        <td>{{ item.course.credit }}</td>
+                        <td>{{ item.course.teacher.name if item.course.teacher else '未分配' }}</td>
+                        <td>{{ item.enroll_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ item.grade if item.grade else '未录入' }}</td>
+                        <td>{{ item.gpa if item.gpa else '-' }}</td>
+                        <td>
+                            {% if not item.grade %}
+                            <a href="{{ url_for('student_bp.drop', enrollment_id=item.enrollment_id) }}" 
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('确定要退选《{{ item.course.course_name }}》吗？退课后将无法恢复！')">
+                                退课
+                            </a>
+                            {% else %}
+                            <button class="btn btn-sm btn-secondary" disabled>已出成绩</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center">您还没有选修任何课程</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

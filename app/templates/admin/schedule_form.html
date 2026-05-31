@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{% if schedule %}编辑排课{% else %}添加排课{% endif %} - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">{% if schedule %}编辑排课{% else %}添加排课{% endif %}</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="course_id" class="form-label">课程 *</label>
+                        <select class="form-select" id="course_id" name="course_id" required>
+                            <option value="">请选择课程</option>
+                            {% for course in courses %}
+                            <option value="{{ course.course_id }}" 
+                                    {% if schedule and schedule.course_id == course.course_id %}selected{% endif %}>
+                                {{ course.course_id }} - {{ course.course_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="day_of_week" class="form-label">星期 *</label>
+                        <select class="form-select" id="day_of_week" name="day_of_week" required>
+                            <option value="">请选择星期</option>
+                            <option value="1" {% if schedule and schedule.day_of_week == 1 %}selected{% endif %}>周一</option>
+                            <option value="2" {% if schedule and schedule.day_of_week == 2 %}selected{% endif %}>周二</option>
+                            <option value="3" {% if schedule and schedule.day_of_week == 3 %}selected{% endif %}>周三</option>
+                            <option value="4" {% if schedule and schedule.day_of_week == 4 %}selected{% endif %}>周四</option>
+                            <option value="5" {% if schedule and schedule.day_of_week == 5 %}selected{% endif %}>周五</option>
+                            <option value="6" {% if schedule and schedule.day_of_week == 6 %}selected{% endif %}>周六</option>
+                            <option value="7" {% if schedule and schedule.day_of_week == 7 %}selected{% endif %}>周日</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="start_time" class="form-label">开始节次 *</label>
+                        <input type="text" class="form-control" id="start_time" name="start_time" 
+                               value="{{ schedule.start_time if schedule else '1' }}" 
+                               placeholder="例如：1" required>
+                        <div class="form-text">输入节次数字，如1、3、5</div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="end_time" class="form-label">结束节次 *</label>
+                        <input type="text" class="form-control" id="end_time" name="end_time" 
+                               value="{{ schedule.end_time if schedule else '2' }}" 
+                               placeholder="例如：2" required>
+                        <div class="form-text">输入节次数字，如2、4、6</div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="classroom" class="form-label">教室 *</label>
+                        <input type="text" class="form-control" id="classroom" name="classroom" 
+                               value="{{ schedule.classroom if schedule else '' }}" 
+                               placeholder="例如：教1-101" required>
+                    </div>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">保存</button>
+                    <a href="{{ url_for('admin_bp.schedule_list') }}" class="btn btn-secondary">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

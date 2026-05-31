@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}学生首页 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">欢迎回来，{{ student.name }}同学</h2>
+    
+    <!-- 个人信息卡片 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">个人信息</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3"><strong>学号：</strong>{{ student.student_id }}</div>
+                <div class="col-md-3"><strong>姓名：</strong>{{ student.name }}</div>
+                <div class="col-md-3"><strong>性别：</strong>{{ student.gender }}</div>
+                <div class="col-md-3"><strong>专业：</strong>{{ student.major }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-3"><strong>班级：</strong>{{ student.class_name }}</div>
+                <div class="col-md-3"><strong>手机号：</strong>{{ student.phone }}</div>
+                <div class="col-md-6"><strong>邮箱：</strong>{{ student.email }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 学习统计卡片 -->
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">已选课程</h5>
+                    <h1 class="display-4">{{ enrolled_count }}</h1>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('student_bp.my_courses') }}" class="text-white">查看我的课程</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">已修学分</h5>
+                    <h1 class="display-4">{{ total_credit }}</h1>
+                </div>
+                <div class="card-footer">
+                    <span>本学期已选学分</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">已出成绩</h5>
+                    <h1 class="display-4">{{ graded_count }}</h1>
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('student_bp.grades') }}" class="text-white">查看我的成绩</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 快速操作 -->
+    <div class="card">
+        <div class="card-header">
+            <h5>快速操作</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <a href="{{ url_for('student_bp.course_list') }}" class="btn btn-primary w-100">进入选课中心</a>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <a href="{{ url_for('student_bp.my_courses') }}" class="btn btn-success w-100">查看我的课程</a>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <a href="{{ url_for('student_bp.grades') }}" class="btn btn-info w-100">查询我的成绩</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

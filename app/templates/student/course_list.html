@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}选课中心 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">选课中心</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>课程编号</th>
+                        <th>课程名称</th>
+                        <th>学分</th>
+                        <th>学时</th>
+                        <th>授课教师</th>
+                        <th>学期</th>
+                        <th>容量/已选</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for info in course_info_list %}
+                    <tr>
+                        <td>{{ info.course.course_id }}</td>
+                        <td>{{ info.course.course_name }}</td>
+                        <td>{{ info.course.credit }}</td>
+                        <td>{{ info.course.hours }}</td>
+                        <td>{{ info.course.teacher.name if info.course.teacher else '未分配' }}</td>
+                        <td>{{ info.course.semester }}</td>
+                        <td>
+                            {% if info.is_full %}
+                            <span class="text-danger">{{ info.course.capacity }}/{{ info.enrolled_num }} (已满)</span>
+                            {% else %}
+                            <span class="text-success">{{ info.course.capacity }}/{{ info.enrolled_num }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if info.is_enrolled %}
+                            <button class="btn btn-sm btn-secondary" disabled>已选</button>
+                            {% elif info.is_full %}
+                            <button class="btn btn-sm btn-danger" disabled>已满</button>
+                            {% else %}
+                            <a href="{{ url_for('student_bp.enroll', course_id=info.course.course_id) }}" 
+                               class="btn btn-sm btn-primary"
+                               onclick="return confirm('确定要选修《{{ info.course.course_name }}》吗？')">
+                                选课
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center">暂无可选课程</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

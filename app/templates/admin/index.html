@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}管理员首页 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">管理员控制台</h2>
+    
+    <div class="row">
+        <!-- 学生统计卡片 -->
+        <div class="col-md-4 mb-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">学生总数</h5>
+                    <h1 class="display-4">{{ student_count }}</h1>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="{{ url_for('admin_bp.student_list') }}" class="text-white">查看详情</a>
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 教师统计卡片 -->
+        <div class="col-md-4 mb-4">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">教师总数</h5>
+                    <h1 class="display-4">{{ teacher_count }}</h1>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="{{ url_for('admin_bp.teacher_list') }}" class="text-white">查看详情</a>
+                    <i class="bi bi-person-badge-fill"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 课程统计卡片 -->
+        <div class="col-md-4 mb-4">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <h5 class="card-title">课程总数</h5>
+                    <h1 class="display-4">{{ course_count }}</h1>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="{{ url_for('admin_bp.course_list') }}" class="text-white">查看详情</a>
+                    <i class="bi bi-book-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5>快速操作</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <a href="{{ url_for('admin_bp.student_add') }}" class="btn btn-primary w-100">添加学生</a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="{{ url_for('admin_bp.teacher_add') }}" class="btn btn-success w-100">添加教师</a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="{{ url_for('admin_bp.course_add') }}" class="btn btn-info w-100">添加课程</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

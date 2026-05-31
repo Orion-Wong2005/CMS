@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}{% if course %}编辑课程{% else %}添加课程{% endif %} - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">{% if course %}编辑课程{% else %}添加课程{% endif %}</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="course_id" class="form-label">课程编号 *</label>
+                        <input type="text" class="form-control" id="course_id" name="course_id" 
+                               value="{{ course.course_id if course else '' }}" 
+                               {% if course %}readonly{% endif %} required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="course_name" class="form-label">课程名称 *</label>
+                        <input type="text" class="form-control" id="course_name" name="course_name" 
+                               value="{{ course.course_name if course else '' }}" required>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="credit" class="form-label">学分 *</label>
+                        <input type="number" step="0.5" min="0" max="10" class="form-control" 
+                               id="credit" name="credit" 
+                               value="{{ course.credit if course else 2.0 }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="hours" class="form-label">学时 *</label>
+                        <input type="number" min="1" max="200" class="form-control" 
+                               id="hours" name="hours" 
+                               value="{{ course.hours if course else 32 }}" required>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="teacher_id" class="form-label">授课教师</label>
+                        <select class="form-select" id="teacher_id" name="teacher_id">
+                            <option value="">请选择教师</option>
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.teacher_id }}" 
+                                    {% if course and course.teacher_id == teacher.teacher_id %}selected{% endif %}>
+                                {{ teacher.teacher_id }} - {{ teacher.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="semester" class="form-label">开课学期</label>
+                        <input type="text" class="form-control" id="semester" name="semester" 
+                               value="{{ course.semester if course else '2024-2025-1' }}" 
+                               placeholder="例如：2024-2025-1">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="capacity" class="form-label">选课容量</label>
+                    <input type="number" min="1" max="200" class="form-control" 
+                           id="capacity" name="capacity" 
+                           value="{{ course.capacity if course else 60 }}">
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-info">保存</button>
+                    <a href="{{ url_for('admin_bp.course_list') }}" class="btn btn-secondary">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

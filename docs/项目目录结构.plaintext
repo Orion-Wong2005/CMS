@@ -1,0 +1,61 @@
+course_management_system/
+├── app/                          # 应用主目录
+│   ├── __init__.py               # Flask应用初始化
+│   ├── config.py                 # 配置文件(数据库、密钥等)
+│   ├── models/                   # 数据库模型(SQLAlchemy)
+│   │   ├── __init__.py
+│   │   ├── user.py               # 用户模型
+│   │   ├── student.py            # 学生模型
+│   │   ├── teacher.py            # 教师模型
+│   │   ├── course.py             # 课程模型
+│   │   ├── enrollment.py         # 选课模型
+│   │   ├── grade.py              # 成绩模型
+│   │   └── schedule.py           # 排课模型
+│   ├── blueprints/               # 蓝图(按功能模块划分)
+│   │   ├── __init__.py
+│   │   ├── auth.py               # 登录/注册/权限认证
+│   │   ├── admin.py              # 管理员后台
+│   │   ├── student.py            # 学生功能
+│   │   ├── teacher.py            # 教师功能
+│   │   ├── course.py             # 课程管理
+│   │   ├── enrollment.py         # 选课管理
+│   │   ├── grade.py              # 成绩管理
+│   │   └── schedule.py           # 排课管理
+│   ├── templates/                # HTML模板
+│   │   ├── base.html             # 基础模板(导航栏、页脚)
+│   │   ├── auth/                 # 认证相关页面
+│   │   │   ├── login.html
+│   │   │   └── register.html
+│   │   ├── admin/                # 管理员页面
+│   │   │   ├── index.html
+│   │   │   ├── student_list.html
+│   │   │   ├── teacher_list.html
+│   │   │   └── course_list.html
+│   │   ├── student/              # 学生页面
+│   │   │   ├── index.html
+│   │   │   ├── course_list.html
+│   │   │   ├── my_courses.html
+│   │   │   └── my_grades.html
+│   │   ├── teacher/              # 教师页面
+│   │   │   ├── index.html
+│   │   │   ├── my_courses.html
+│   │   │   └── student_list.html
+│   │   └── common/               # 公共页面
+│   │       ├── 403.html          # 无权限页面
+│   │       └── 404.html          # 页面不存在
+│   ├── static/                   # 静态资源
+│   │   ├── css/                  # 样式文件
+│   │   ├── js/                   # JavaScript文件
+│   │   ├── images/               # 图片资源
+│   │   └── lib/                  # 第三方库(Bootstrap、jQuery)
+│   ├── utils/                    # 工具函数
+│   │   ├── __init__.py
+│   │   ├── md5.py                # MD5加密工具
+│   │   ├── decorators.py         # 权限装饰器
+│   │   └── excel.py              # Excel导出工具
+│   └── extensions.py             # 扩展初始化(SQLAlchemy等)
+├── migrations/                   # 数据库迁移文件(Flask-Migrate)
+├── tests/                        # 测试用例(可选)
+├── run.py                        # 应用启动入口
+├── requirements.txt              # 依赖包列表
+└── README.md                     # 项目说明文档
