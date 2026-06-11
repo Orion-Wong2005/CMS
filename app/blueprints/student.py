@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, session, request
 from app.extensions import db
 from app.models import Student, Course, Enrollment, Grade
@@ -113,43 +114,53 @@ def enroll(course_id):
     student = Student.query.filter_by(user_id=session['user_id']).first()
     course = Course.query.get_or_404(course_id)
     
-    # 1. 检查是否已选该课程
+    # 1. 检查是否已选该课程（不分状态，先查是否有历史记录）
     existing_enrollment = Enrollment.query.filter_by(
         student_id=student.student_id,
-        course_id=course_id,
-        status=1
+        course_id=course_id
     ).first()
-    
-    if existing_enrollment:
+
+    if existing_enrollment and existing_enrollment.status == 1:
         flash('您已选过该课程，无需重复选课', 'warning')
         return redirect(url_for('student_bp.course_list'))
-    
-    # 2. 检查课程容量
-    enrolled_num = Enrollment.query.filter_by(
-        course_id=course_id, 
-        status=1
-    ).count()
-    
-    if enrolled_num >= course.capacity:
-        flash('课程容量已满，选课失败', 'danger')
-        return redirect(url_for('student_bp.course_list'))
-    
+
+    # 2. 检查课程容量（退课后重新选课不算新占名额）
+    if not existing_enrollment or existing_enrollment.status == 0:
+        enrolled_num = Enrollment.query.filter_by(
+            course_id=course_id,
+            status=1
+        ).count()
+
+        if enrolled_num >= course.capacity:
+            flash('课程容量已满，选课失败', 'danger')
+            return redirect(url_for('student_bp.course_list'))
+
     try:
-        # 3. 创建选课记录
-        enrollment = Enrollment(
+        if existing_enrollment and existing_enrollment.status == 0:
+            # 3a. 退课后重新选课：恢复原记录
+            existing_enrollment.status = 1
+            existing_enrollment.enroll_time = datetime.now()
+        else:
+            # 3b. 首次选课：创建新记录
+            enrollment = Enrollment(
+                student_id=student.student_id,
+                course_id=course_id
+            )
+            db.session.add(enrollment)
+
+        # 4. 预创建成绩记录（如果已有则不重复创建）
+        existing_grade = Grade.query.filter_by(
             student_id=student.student_id,
             course_id=course_id
-        )
-        db.session.add(enrollment)
-        
-        # 4. 预创建成绩记录（方便教师后续录入）
-        grade = Grade(
-            student_id=student.student_id,
-            course_id=course_id,
-            grade=None
-        )
-        db.session.add(grade)
-        
+        ).first()
+        if not existing_grade:
+            grade = Grade(
+                student_id=student.student_id,
+                course_id=course_id,
+                grade=None
+            )
+            db.session.add(grade)
+
         db.session.commit()
         flash(f'选课成功！您已成功选修《{course.course_name}》', 'success')
     except Exception as e:
