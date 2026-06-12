@@ -1,3 +1,4 @@
+# app/__init__.py
 from flask import Flask
 from app.extensions import db, migrate
 from app.config import Config
@@ -20,6 +21,7 @@ def create_app(config_class=Config):
     from app.blueprints.enrollment import enrollment_bp
     from app.blueprints.grade import grade_bp
     from app.blueprints.schedule import schedule_bp
+    from app.blueprints.classroom import classroom_bp  
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -29,6 +31,7 @@ def create_app(config_class=Config):
     app.register_blueprint(enrollment_bp, url_prefix='/enrollment')
     app.register_blueprint(grade_bp, url_prefix='/grade')
     app.register_blueprint(schedule_bp, url_prefix='/schedule')
+    app.register_blueprint(classroom_bp)  # 新增：注册教室蓝图
 
     # ==============================
     # 全局错误处理器
