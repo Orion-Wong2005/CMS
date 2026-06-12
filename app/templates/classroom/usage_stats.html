@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}教室使用统计 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">教室使用次数统计（CTE递归查询）</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">选择学期</label>
+                            <input type="text" id="semesterInput" class="form-control" placeholder="如：2025-2026-1">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button id="queryBtn" class="btn btn-primary form-control">统计</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>教室编号</th>
+                                    <th>教学楼</th>
+                                    <th>类型</th>
+                                    <th>容量</th>
+                                    <th>总使用次数</th>
+                                    <th>平均每周使用次数</th>
+                                    <th>最高周使用次数</th>
+                                    <th>最低周使用次数</th>
+                                    <th>使用周数/总周数</th>
+                                </tr>
+                            </thead>
+                            <tbody id="statsBody">
+                                <tr><td colspan="9" class="text-center">加载中...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="alert alert-secondary mt-3">
+                        <small>
+                            <i class="bi bi-info-circle"></i> 
+                            说明：使用CTE递归查询生成20周数据，统计各教室每周使用次数。总周数默认为20周。
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    
+    document.getElementById('queryBtn').addEventListener('click', function() {
+        loadStats();
+    });
+});
+
+function loadStats() {
+    var semester = document.getElementById('semesterInput').value;
+    var url = '/classroom/api/classroom_usage_stats';
+    if (semester) url += '?semester=' + encodeURIComponent(semester);
+    
+    fetch(url)
+        .then(function(response) { return response.json(); })
+        .then(function(response) {
+            if (response.code === 200) {
+                renderStats(response.data);
+                if (!semester && response.data.semester) {
+                    document.getElementById('semesterInput').value = response.data.semester;
+                }
+            } else {
+                alert(response.message);
+            }
+        });
+}
+
+function renderStats(data) {
+    var tbody = document.getElementById('statsBody');
+    tbody.innerHTML = '';
+    
+    if (!data.stats || data.stats.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">暂无数据</td></tr>';
+        return;
+    }
+    
+    for (var i = 0; i < data.stats.length; i++) {
+        var s = data.stats[i];
+        var usageClass = '';
+        if (s.total_usage === 0) usageClass = 'table-danger';
+        else if (s.total_usage < 10) usageClass = 'table-warning';
+        else usageClass = 'table-success';
+        
+        var row = tbody.insertRow();
+        row.className = usageClass;
+        row.insertCell(0).innerHTML = '<strong>' + s.classroom_number + '</strong>';
+        row.insertCell(1).innerHTML = s.building;
+        row.insertCell(2).innerHTML = s.type;
+        row.insertCell(3).innerHTML = s.capacity;
+        row.insertCell(4).innerHTML = '<span class="badge bg-primary rounded-pill">' + s.total_usage + '</span>';
+        row.insertCell(5).innerHTML = s.avg_weekly_usage;
+        row.insertCell(6).innerHTML = s.max_weekly_usage;
+        row.insertCell(7).innerHTML = s.min_weekly_usage;
+        row.insertCell(8).innerHTML = s.used_weeks + ' / 20';
+    }
+}
+</script>
+{% endblock %}

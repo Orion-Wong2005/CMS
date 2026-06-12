@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}教室课表查询 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">教室课表查询</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">选择教室</label>
+                            <select id="classroomSelect" class="form-control">
+                                <option value="">请选择教室</option>
+                                {% for c in classrooms %}
+                                <option value="{{ c.id }}">{{ c.building }}-{{ c.classroom_number }} ({{ c.type }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">学期</label>
+                            <input type="text" id="semesterInput" class="form-control" placeholder="如：2025-2026-1">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">周次</label>
+                            <input type="number" id="weekInput" class="form-control" placeholder="1-20" min="1" max="20">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button id="queryBtn" class="btn btn-primary form-control">查询</button>
+                        </div>
+                    </div>
+                    
+                    <div id="timetableContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('queryBtn').addEventListener('click', function() {
+        var classroomId = document.getElementById('classroomSelect').value;
+        if (!classroomId) {
+            alert('请选择教室');
+            return;
+        }
+        
+        var semester = document.getElementById('semesterInput').value;
+        var week = document.getElementById('weekInput').value;
+        
+        var url = '/classroom/api/classroom_timetable?classroom_id=' + encodeURIComponent(classroomId);
+        if (semester) url += '&semester=' + encodeURIComponent(semester);
+        if (week) url += '&week=' + encodeURIComponent(week);
+        
+        fetch(url)
+            .then(function(response) { return response.json(); })
+            .then(function(response) {
+                if (response.code === 200) {
+                    renderTimetable(response.data);
+                } else {
+                    alert(response.message);
+                }
+            });
+    });
+});
+
+function renderTimetable(data) {
+    var container = document.getElementById('timetableContainer');
+    var classroom = data.classroom;
+    var matrix = data.timetable;
+    
+    var weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    
+    var html = `
+        <div class="alert alert-info">
+            <strong>${classroom.building} - ${classroom.classroom_number}</strong> 
+            (类型：${classroom.type}，容量：${classroom.capacity}人)
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered text-center">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 80px;">节次</th>
+                        ${weekdays.map(function(d) { return '<th>' + d + '</th>'; }).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    for (var s = 0; s < matrix.length; s++) {
+        var row = matrix[s];
+        html += '<tr><td class="bg-light fw-bold">' + row.display + '</td>';
+        for (var w = 1; w <= 7; w++) {
+            var cell = row['weekday_' + w];
+            if (cell) {
+                html += '<td class="bg-success text-white"><strong>' + cell.course_name + '</strong></td>';
+            } else {
+                html += '<td class="text-muted">-</td>';
+            }
+        }
+        html += '</tr>';
+    }
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    container.innerHTML = html;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}教室管理 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">教室管理</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <input type="text" id="filterBuilding" class="form-control" placeholder="教学楼">
+                        </div>
+                        <div class="col-md-3">
+                            <select id="filterType" class="form-control">
+                                <option value="">全部类型</option>
+                                <option value="普通教室">普通教室</option>
+                                <option value="多媒体教室">多媒体教室</option>
+                                <option value="实验室">实验室</option>
+                                <option value="机房">机房</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="filterStatus" class="form-control">
+                                <option value="">全部状态</option>
+                                <option value="可用">可用</option>
+                                <option value="维修中">维修中</option>
+                                <option value="已停用">已停用</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button id="searchBtn" class="btn btn-primary">搜索</button>
+                            <button id="resetBtn" class="btn btn-secondary">重置</button>
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addModal">
+                                <i class="bi bi-plus"></i> 添加教室
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>教室编号</th>
+                                    <th>教学楼</th>
+                                    <th>楼层</th>
+                                    <th>容量</th>
+                                    <th>类型</th>
+                                    <th>设备</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="classroomList">
+                                <tr><td colspan="9" class="text-center">加载中...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加教室模态框 -->
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加教室</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addForm">
+                    <div class="mb-3">
+                        <label>教室编号 *</label>
+                        <input type="text" class="form-control" name="classroom_number" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>教学楼 *</label>
+                        <input type="text" class="form-control" name="building" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>楼层</label>
+                        <input type="number" class="form-control" name="floor">
+                    </div>
+                    <div class="mb-3">
+                        <label>容量</label>
+                        <input type="number" class="form-control" name="capacity" value="60">
+                    </div>
+                    <div class="mb-3">
+                        <label>类型</label>
+                        <select class="form-control" name="type">
+                            <option value="普通教室">普通教室</option>
+                            <option value="多媒体教室">多媒体教室</option>
+                            <option value="实验室">实验室</option>
+                            <option value="机房">机房</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>设备配置</label>
+                        <textarea class="form-control" name="equipment" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label>状态</label>
+                        <select class="form-control" name="status">
+                            <option value="可用">可用</option>
+                            <option value="维修中">维修中</option>
+                            <option value="已停用">已停用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="saveClassroom">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 等待页面加载完成后执行
+document.addEventListener('DOMContentLoaded', function() {
+    loadClassrooms();
+    
+    document.getElementById('searchBtn').addEventListener('click', function() {
+        loadClassrooms();
+    });
+    
+    document.getElementById('resetBtn').addEventListener('click', function() {
+        document.getElementById('filterBuilding').value = '';
+        document.getElementById('filterType').value = '';
+        document.getElementById('filterStatus').value = '';
+        loadClassrooms();
+    });
+    
+    document.getElementById('saveClassroom').addEventListener('click', function() {
+        var data = {
+            classroom_number: document.querySelector('#addForm [name="classroom_number"]').value,
+            building: document.querySelector('#addForm [name="building"]').value,
+            floor: document.querySelector('#addForm [name="floor"]').value,
+            capacity: document.querySelector('#addForm [name="capacity"]').value,
+            type: document.querySelector('#addForm [name="type"]').value,
+            equipment: document.querySelector('#addForm [name="equipment"]').value,
+            status: document.querySelector('#addForm [name="status"]').value
+        };
+        
+        fetch('/classroom/api/classrooms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(res) {
+            if (res.code === 200) {
+                alert('添加成功');
+                var modal = bootstrap.Modal.getInstance(document.getElementById('addModal'));
+                modal.hide();
+                document.getElementById('addForm').reset();
+                loadClassrooms();
+            } else {
+                alert(res.message);
+            }
+        });
+    });
+});
+
+function loadClassrooms() {
+    var building = document.getElementById('filterBuilding').value;
+    var type = document.getElementById('filterType').value;
+    var status = document.getElementById('filterStatus').value;
+    
+    fetch('/classroom/api/classrooms?building=' + encodeURIComponent(building) + '&type=' + encodeURIComponent(type) + '&status=' + encodeURIComponent(status))
+        .then(function(response) { return response.json(); })
+        .then(function(res) {
+            if (res.code === 200) {
+                renderClassrooms(res.data);
+            }
+        });
+}
+
+function renderClassrooms(classrooms) {
+    var tbody = document.getElementById('classroomList');
+    tbody.innerHTML = '';
+    
+    if (classrooms.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">暂无数据</td></tr>';
+        return;
+    }
+    
+    for (var i = 0; i < classrooms.length; i++) {
+        var c = classrooms[i];
+        var statusClass = (c.status === '可用') ? 'bg-success' : ((c.status === '维修中') ? 'bg-warning' : 'bg-secondary');
+        var row = tbody.insertRow();
+        row.insertCell(0).innerHTML = c.id;
+        row.insertCell(1).innerHTML = c.classroom_number;
+        row.insertCell(2).innerHTML = c.building;
+        row.insertCell(3).innerHTML = c.floor || '-';
+        row.insertCell(4).innerHTML = c.capacity;
+        row.insertCell(5).innerHTML = c.type;
+        row.insertCell(6).innerHTML = c.equipment || '-';
+        row.insertCell(7).innerHTML = '<span class="badge ' + statusClass + ' text-white">' + c.status + '</span>';
+        row.insertCell(8).innerHTML = '<button class="btn btn-sm btn-info" onclick="editClassroom(' + c.id + ')">编辑</button> <button class="btn btn-sm btn-danger" onclick="deleteClassroom(' + c.id + ')">删除</button>';
+    }
+}
+
+function editClassroom(id) {
+    fetch('/classroom/api/classrooms')
+        .then(function(response) { return response.json(); })
+        .then(function(res) {
+            var classroom = null;
+            for (var i = 0; i < res.data.length; i++) {
+                if (res.data[i].id === id) {
+                    classroom = res.data[i];
+                    break;
+                }
+            }
+            if (classroom) {
+                // 简单的编辑：使用 prompt
+                var newNumber = prompt('请输入新的教室编号', classroom.classroom_number);
+                if (newNumber && newNumber !== classroom.classroom_number) {
+                    fetch('/classroom/api/classrooms/' + id, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ classroom_number: newNumber })
+                    })
+                    .then(function(response) { return response.json(); })
+                    .then(function(res) {
+                        if (res.code === 200) {
+                            alert('修改成功');
+                            loadClassrooms();
+                        } else {
+                            alert(res.message);
+                        }
+                    });
+                }
+            }
+        });
+}
+
+function deleteClassroom(id) {
+    if (confirm('确定删除该教室吗？删除后将无法恢复。')) {
+        fetch('/classroom/api/classrooms/' + id, {
+            method: 'DELETE'
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(res) {
+            if (res.code === 200) {
+                alert('删除成功');
+                loadClassrooms();
+            } else {
+                alert(res.message);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

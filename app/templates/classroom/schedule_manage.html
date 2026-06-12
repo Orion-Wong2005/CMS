@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}教室排课管理 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">教室排课管理</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select id="filterClassroom" class="form-control">
+                                <option value="">全部教室</option>
+                                {% for c in classrooms %}
+                                <option value="{{ c.id }}">{{ c.building }}-{{ c.classroom_number }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="text" id="filterSemester" class="form-control" placeholder="学期">
+                        </div>
+                        <div class="col-md-2">
+                            <button id="searchBtn" class="btn btn-primary">搜索</button>
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
+                                <i class="bi bi-plus"></i> 添加排课
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>教室</th>
+                                    <th>课程</th>
+                                    <th>学期</th>
+                                    <th>周次</th>
+                                    <th>星期</th>
+                                    <th>节次</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleList">
+                                <td><td colspan="8" class="text-center">加载中...<\/td><\/tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加排课模态框 -->
+<div class="modal fade" id="addScheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加排课</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="scheduleForm">
+                    <div class="mb-3">
+                        <label>教室 *</label>
+                        <select class="form-control" name="classroom_id" required>
+                            <option value="">请选择教室</option>
+                            {% for c in classrooms %}
+                            <option value="{{ c.id }}">{{ c.building }}-{{ c.classroom_number }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>课程 *</label>
+                        <select class="form-control" name="course_id" required>
+                            <option value="">请选择课程</option>
+                            {% for c in courses %}
+                            <option value="{{ c.course_id }}">{{ c.course_name }} ({{ c.course_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>学期 *</label>
+                        <input type="text" class="form-control" name="semester" placeholder="如：2025-2026-1" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label>周次 *</label>
+                            <input type="number" class="form-control" name="week" min="1" max="20" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label>星期 *</label>
+                            <select class="form-control" name="weekday" required>
+                                <option value="1">周一</option>
+                                <option value="2">周二</option>
+                                <option value="3">周三</option>
+                                <option value="4">周四</option>
+                                <option value="5">周五</option>
+                                <option value="6">周六</option>
+                                <option value="7">周日</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>开始节次 *</label>
+                            <select class="form-control" name="start_section" required>
+                                {% for i in range(1, 13) %}
+                                <option value="{{ i }}">{{ i }}节</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>结束节次 *</label>
+                            <select class="form-control" name="end_section" required>
+                                {% for i in range(1, 13) %}
+                                <option value="{{ i }}">{{ i }}节</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="saveSchedule">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadSchedules();
+    
+    document.getElementById('searchBtn').addEventListener('click', function() {
+        loadSchedules();
+    });
+    
+    document.getElementById('saveSchedule').addEventListener('click', function() {
+        var data = {
+            classroom_id: document.querySelector('#scheduleForm [name="classroom_id"]').value,
+            course_id: document.querySelector('#scheduleForm [name="course_id"]').value,
+            semester: document.querySelector('#scheduleForm [name="semester"]').value,
+            week: document.querySelector('#scheduleForm [name="week"]').value,
+            weekday: document.querySelector('#scheduleForm [name="weekday"]').value,
+            start_section: document.querySelector('#scheduleForm [name="start_section"]').value,
+            end_section: document.querySelector('#scheduleForm [name="end_section"]').value
+        };
+        
+        fetch('/classroom/api/schedules', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(res) {
+            if (res.code === 200) {
+                alert('添加成功');
+                var modal = bootstrap.Modal.getInstance(document.getElementById('addScheduleModal'));
+                modal.hide();
+                document.getElementById('scheduleForm').reset();
+                loadSchedules();
+            } else {
+                alert(res.message);
+            }
+        });
+    });
+});
+
+function loadSchedules() {
+    var classroomId = document.getElementById('filterClassroom').value;
+    var semester = document.getElementById('filterSemester').value;
+    
+    var url = '/classroom/api/schedules';
+    var params = [];
+    if (classroomId) params.push('classroom_id=' + encodeURIComponent(classroomId));
+    if (semester) params.push('semester=' + encodeURIComponent(semester));
+    if (params.length > 0) url += '?' + params.join('&');
+    
+    fetch(url)
+        .then(function(response) { return response.json(); })
+        .then(function(res) {
+            if (res.code === 200) {
+                renderSchedules(res.data);
+            }
+        });
+}
+
+function renderSchedules(schedules) {
+    var tbody = document.getElementById('scheduleList');
+    tbody.innerHTML = '';
+    
+    if (schedules.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">暂无数据</td></tr>';
+        return;
+    }
+    
+    for (var i = 0; i < schedules.length; i++) {
+        var s = schedules[i];
+        var row = tbody.insertRow();
+        row.insertCell(0).innerHTML = s.id;
+        row.insertCell(1).innerHTML = (s.building || '') + '-' + (s.classroom_number || '');
+        row.insertCell(2).innerHTML = s.course_name || '';
+        row.insertCell(3).innerHTML = s.semester;
+        row.insertCell(4).innerHTML = '第' + s.week + '周';
+        row.insertCell(5).innerHTML = s.weekday_name;
+        row.insertCell(6).innerHTML = s.sections;
+        row.insertCell(7).innerHTML = '<button class="btn btn-sm btn-danger" onclick="deleteSchedule(' + s.id + ')">删除</button>';
+    }
+}
+
+function deleteSchedule(id) {
+    if (confirm('确定删除该排课吗？')) {
+        fetch('/classroom/api/schedules/' + id, {
+            method: 'DELETE'
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(res) {
+            if (res.code === 200) {
+                alert('删除成功');
+                loadSchedules();
+            } else {
+                alert(res.message);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}
