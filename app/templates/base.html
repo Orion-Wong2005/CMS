@@ -75,6 +75,35 @@
                                     <i class="bi bi-calendar3 me-1"></i>排课管理
                                 </a>
                             </li>
+                            <!-- 教室管理下拉菜单 -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-building me-1"></i>教室管理
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('classroom.admin_manage') }}">
+                                            <i class="bi bi-door-closed me-2"></i>教室信息管理
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('classroom.admin_schedules') }}">
+                                            <i class="bi bi-calendar-plus me-2"></i>教室排课管理
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('classroom.schedule_query') }}">
+                                            <i class="bi bi-search me-2"></i>教室课表查询
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('classroom.usage_stats') }}">
+                                            <i class="bi bi-graph-up me-2"></i>教室使用统计
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
                         {% elif session.role == 'teacher' %}
                             <!-- 教师菜单 -->
                             <li class="nav-item">
@@ -204,10 +233,13 @@
     <!-- 页脚 -->
     <footer class="bg-light py-3 mt-5">
         <div class="container text-center text-muted">
-            <small>© 2026 课程管理系统 | 基于 Flask + MySQL 开发</small>
+            <small>© 2026 课程管理系统 | 基于 Flask + SQLite 开发</small>
         </div>
     </footer>
 
+    <!-- jQuery (必须在 Bootstrap 之前) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
