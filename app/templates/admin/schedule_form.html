@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container mt-4">
     <h2 class="mb-4">{% if schedule %}编辑排课{% else %}添加排课{% endif %}</h2>
-    
+
     <div class="card">
         <div class="card-body">
             <form method="post">
@@ -15,57 +15,133 @@
                         <select class="form-select" id="course_id" name="course_id" required>
                             <option value="">请选择课程</option>
                             {% for course in courses %}
-                            <option value="{{ course.course_id }}" 
+                            <option value="{{ course.course_id }}"
                                     {% if schedule and schedule.course_id == course.course_id %}selected{% endif %}>
                                 {{ course.course_id }} - {{ course.course_name }}
+                                ({{ course.teacher.name if course.teacher else '未分配教师' }})
                             </option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-3 mb-3">
+                        <label for="semester" class="form-label">学期</label>
+                        <input type="text" class="form-control" id="semester" name="semester"
+                               value="{{ schedule.semester if schedule and schedule.semester else '2025-2026-2' }}"
+                               placeholder="如：2025-2026-2">
+                    </div>
+                    <div class="col-md-3 mb-3">
                         <label for="day_of_week" class="form-label">星期 *</label>
                         <select class="form-select" id="day_of_week" name="day_of_week" required>
                             <option value="">请选择星期</option>
-                            <option value="1" {% if schedule and schedule.day_of_week == 1 %}selected{% endif %}>周一</option>
-                            <option value="2" {% if schedule and schedule.day_of_week == 2 %}selected{% endif %}>周二</option>
-                            <option value="3" {% if schedule and schedule.day_of_week == 3 %}selected{% endif %}>周三</option>
-                            <option value="4" {% if schedule and schedule.day_of_week == 4 %}selected{% endif %}>周四</option>
-                            <option value="5" {% if schedule and schedule.day_of_week == 5 %}selected{% endif %}>周五</option>
-                            <option value="6" {% if schedule and schedule.day_of_week == 6 %}selected{% endif %}>周六</option>
-                            <option value="7" {% if schedule and schedule.day_of_week == 7 %}selected{% endif %}>周日</option>
+                            {% for i in range(1, 8) %}
+                            <option value="{{ i }}" {% if schedule and schedule.day_of_week == i %}selected{% endif %}>
+                                {{ ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'][i] }}
+                            </option>
+                            {% endfor %}
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="row">
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label for="start_time" class="form-label">开始节次 *</label>
-                        <input type="text" class="form-control" id="start_time" name="start_time" 
-                               value="{{ schedule.start_time if schedule else '1' }}" 
-                               placeholder="例如：1" required>
-                        <div class="form-text">输入节次数字，如1、3、5</div>
+                        <select class="form-select" id="start_time" name="start_time" required>
+                            <option value="">请选择</option>
+                            {% for num, info in periods %}
+                            <option value="{{ num }}"
+                                    {% if schedule and schedule.start_time|string == num|string %}selected{% endif %}>
+                                第{{ num }}节 ({{ info.start }}-{{ info.end }})
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label for="end_time" class="form-label">结束节次 *</label>
-                        <input type="text" class="form-control" id="end_time" name="end_time" 
-                               value="{{ schedule.end_time if schedule else '2' }}" 
-                               placeholder="例如：2" required>
-                        <div class="form-text">输入节次数字，如2、4、6</div>
+                        <select class="form-select" id="end_time" name="end_time" required>
+                            <option value="">请选择</option>
+                            {% for num, info in periods %}
+                            <option value="{{ num }}"
+                                    {% if schedule and schedule.end_time|string == num|string %}selected{% endif %}>
+                                第{{ num }}节 ({{ info.start }}-{{ info.end }})
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label for="classroom" class="form-label">教室 *</label>
-                        <input type="text" class="form-control" id="classroom" name="classroom" 
-                               value="{{ schedule.classroom if schedule else '' }}" 
+                        <input type="text" class="form-control" id="classroom" name="classroom"
+                               value="{{ schedule.classroom if schedule else '' }}"
                                placeholder="例如：教1-101" required>
                     </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">周次范围</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" name="week_start"
+                                   value="{{ schedule.week_start if schedule and schedule.week_start else '' }}"
+                                   placeholder="起始周" min="1" max="20">
+                            <span class="input-group-text">至</span>
+                            <input type="number" class="form-control" name="week_end"
+                                   value="{{ schedule.week_end if schedule and schedule.week_end else '' }}"
+                                   placeholder="结束周" min="1" max="20">
+                        </div>
+                        <div class="form-text">可选，如不填表示全学期</div>
+                    </div>
                 </div>
-                
+
+                {# 预览选择的上课时间 #}
+                <div class="alert alert-info" id="timePreview">
+                    <i class="bi bi-clock me-2"></i>
+                    <span id="previewText">请选择节次查看上课时间</span>
+                </div>
+
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">保存</button>
-                    <a href="{{ url_for('admin_bp.schedule_list') }}" class="btn btn-secondary">取消</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>保存
+                    </button>
+                    <a href="{{ url_for('admin_bp.schedule_list') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-lg me-1"></i>取消
+                    </a>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+// 节次选择时动态预览上课时间
+const periodData = {
+    {% for num, info in periods %}
+    {{ num }}: { start: '{{ info.start }}', end: '{{ info.end }}', label: '{{ info.label }}' },
+    {% endfor %}
+};
+
+function updatePreview() {
+    const startVal = document.getElementById('start_time').value;
+    const endVal = document.getElementById('end_time').value;
+    const preview = document.getElementById('previewText');
+
+    if (startVal && endVal) {
+        const s = parseInt(startVal), e = parseInt(endVal);
+        if (s > e) {
+            preview.textContent = '⚠ 开始节次不能大于结束节次';
+            preview.parentElement.className = 'alert alert-warning';
+        } else {
+            const timeRange = periodData[s].start + '-' + periodData[e].end;
+            preview.textContent = '上课时间：' + timeRange + '  (第' + s + '-' + e + '节，共' + (e-s+1) + '小节)';
+            preview.parentElement.className = 'alert alert-info';
+        }
+    } else {
+        preview.textContent = '请选择节次查看上课时间';
+        preview.parentElement.className = 'alert alert-info';
+    }
+}
+
+document.getElementById('start_time').addEventListener('change', updatePreview);
+document.getElementById('end_time').addEventListener('change', updatePreview);
+
+// 页面加载时也预览一次
+document.addEventListener('DOMContentLoaded', function() {
+    updatePreview();
+});
+</script>
 {% endblock %}

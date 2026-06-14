@@ -1,8 +1,13 @@
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, session, request
+from flask import Blueprint, render_template, redirect, url_for, flash, session, request, jsonify
 from app.extensions import db
-from app.models import Student, Course, Enrollment, Grade
+from app.models import Student, Course, Enrollment, Grade, Schedule
 from app.utils.decorators import student_required
+from app.utils.schedule_utils import (
+    get_all_periods, get_period_time_range, format_schedule_time,
+    format_schedule_summary, get_weekday_name, PERIOD_TIMES,
+    TOTAL_PERIODS, TOTAL_DAYS
+)
 
 student_bp = Blueprint('student_bp', __name__, url_prefix='/student')
 
@@ -78,27 +83,33 @@ def course_list():
     # 获取所有课程
     courses = Course.query.all()
     
-    # 为每个课程添加额外信息：已选人数、是否已选
+    # 为每个课程添加额外信息：已选人数、是否已选、上课时间
     course_info_list = []
     for course in courses:
         # 计算已选人数（只统计正常选课状态）
         enrolled_num = Enrollment.query.filter_by(
-            course_id=course.course_id, 
+            course_id=course.course_id,
             status=1
         ).count()
-        
+
         # 检查当前学生是否已选该课程
         is_enrolled = Enrollment.query.filter_by(
             student_id=student.student_id,
             course_id=course.course_id,
             status=1
         ).first() is not None
-        
+
+        # 获取课程的排课信息
+        schedules = Schedule.query.filter_by(course_id=course.course_id).all()
+        schedule_summaries = [format_schedule_summary(s) for s in schedules]
+
         course_info_list.append({
             'course': course,
             'enrolled_num': enrolled_num,
             'is_enrolled': is_enrolled,
-            'is_full': enrolled_num >= course.capacity
+            'is_full': enrolled_num >= course.capacity,
+            'schedules': schedules,
+            'schedule_summaries': schedule_summaries,
         })
     
     return render_template('student/course_list.html',
@@ -321,35 +332,153 @@ def profile():
 def my_schedule():
     """查看个人课表"""
     student = Student.query.filter_by(user_id=session['user_id']).first()
-    
+
     # 查询学生所有已选课程的排课
     enrollments = Enrollment.query.filter_by(
         student_id=student.student_id,
         status=1
     ).all()
-    
-    # 初始化课表表格（7天 x 12节）
-    schedule_table = [[None for _ in range(8)] for _ in range(13)]  # 行：节次1-12，列：星期1-7
-    
+
+    # 初始化课表表格（8节 x 7天）
+    # schedule_table[period][day] period: 1-8, day: 1-7
+    schedule_table = [[None for _ in range(TOTAL_DAYS + 1)] for _ in range(TOTAL_PERIODS + 1)]
+
     for enrollment in enrollments:
         course = enrollment.course
         schedules = Schedule.query.filter_by(course_id=course.course_id).all()
-        
-        for schedule in schedules:
-            day = schedule.day_of_week
-            start = int(schedule.start_time)
-            end = int(schedule.end_time)
-            
+
+        for sched in schedules:
+            day = sched.day_of_week
+            try:
+                start = int(sched.start_time)
+                end = int(sched.end_time)
+            except (ValueError, TypeError):
+                continue
+
+            # 只显示在 1-8 范围内的节次
+            if start < 1 or end > TOTAL_PERIODS:
+                continue
+
             # 将课程信息填入课表
             for period in range(start, end + 1):
                 schedule_table[period][day] = {
                     'course_name': course.course_name,
                     'teacher': course.teacher.name if course.teacher else '未分配',
-                    'classroom': schedule.classroom,
+                    'classroom': sched.classroom,
                     'rowspan': end - start + 1,
-                    'is_first': (period == start)
+                    'is_first': (period == start),
+                    'semester': sched.semester,
+                    'week_start': sched.week_start,
+                    'week_end': sched.week_end,
                 }
-    
+
+    # 构建节次与时间的映射列表
+    period_times = [{'num': p, 'time': f"{PERIOD_TIMES[p]['start']}-{PERIOD_TIMES[p]['end']}"}
+                    for p in range(1, TOTAL_PERIODS + 1)]
+
     return render_template('student/my_schedule.html',
                           schedule_table=schedule_table,
+                          period_times=period_times,
                           days=['周一', '周二', '周三', '周四', '周五', '周六', '周日'])
+
+
+# ==============================
+# 教室课表查询（学生端）
+# ==============================
+@student_bp.route('/classroom-schedule')
+@student_required
+def classroom_schedule_query():
+    """学生查询教室课表 - 查看每间教室该天每个时间段的课程"""
+    from app.models import Classroom, ClassroomSchedule as CS
+
+    classrooms = Classroom.query.filter_by(status='可用').order_by(Classroom.building, Classroom.classroom_number).all()
+    return render_template('student/classroom_schedule.html', classrooms=classrooms,
+                          periods=get_all_periods(), days=range(1, 8),
+                          weekday_names=['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'])
+
+
+@student_bp.route('/api/classroom-timetable')
+@student_required
+def api_classroom_timetable():
+    """API: 获取指定教室的课表"""
+    from app.models import Classroom, ClassroomSchedule as CS
+
+    classroom_id = request.args.get('classroom_id', type=int)
+    semester = request.args.get('semester', '')
+    week = request.args.get('week', type=int)
+
+    if not classroom_id:
+        return jsonify({'code': 400, 'message': '请选择教室'})
+
+    classroom = Classroom.query.get(classroom_id)
+    if not classroom:
+        return jsonify({'code': 400, 'message': '教室不存在'})
+
+    # 查询该教室的所有排课
+    schedules = Schedule.query.filter_by(classroom=classroom.classroom_number).all()
+
+    # 也查询 ClassroomSchedule 模型的数据
+    cs_query = CS.query.filter_by(classroom_id=classroom_id)
+    if semester:
+        cs_query = cs_query.filter_by(semester=semester)
+    if week:
+        cs_query = cs_query.filter_by(week=week)
+    cs_schedules = cs_query.order_by(CS.weekday, CS.start_section).all()
+
+    # 构建课表矩阵 (8节 x 7天)
+    matrix = []
+    for section in range(1, TOTAL_PERIODS + 1):
+        time_info = PERIOD_TIMES[section]
+        row = {
+            'section': section,
+            'time': f"{time_info['start']}-{time_info['end']}",
+            'label': time_info['label']
+        }
+        for day_num in range(1, TOTAL_DAYS + 1):
+            row[f'day_{day_num}'] = None
+        matrix.append(row)
+
+    # 填充 Schedule 模型数据
+    for sched in schedules:
+        try:
+            start = int(sched.start_time)
+            end = int(sched.end_time)
+        except (ValueError, TypeError):
+            continue
+        if start < 1 or end > TOTAL_PERIODS:
+            continue
+        day = sched.day_of_week
+        if day < 1 or day > TOTAL_DAYS:
+            continue
+        for section in range(start, end + 1):
+            idx = section - 1
+            matrix[idx][f'day_{day}'] = {
+                'course_name': sched.course.course_name if sched.course else '',
+                'course_id': sched.course_id,
+                'teacher': sched.course.teacher.name if sched.course and sched.course.teacher else '',
+                'classroom': sched.classroom,
+                'period_range': f'{start}-{end}',
+                'semester': sched.semester,
+            }
+
+    # 填充 ClassroomSchedule 模型数据（会覆盖同位置的 Schedule 数据）
+    for cs in cs_schedules:
+        for section in range(cs.start_section, cs.end_section + 1):
+            if 1 <= section <= TOTAL_PERIODS:
+                idx = section - 1
+                matrix[idx][f'day_{cs.weekday}'] = {
+                    'course_name': cs.course.course_name if cs.course else '',
+                    'course_id': cs.course_id,
+                    'teacher': cs.course.teacher.name if cs.course and cs.course.teacher else '',
+                    'classroom': classroom.classroom_number,
+                    'period_range': f'{cs.start_section}-{cs.end_section}',
+                    'semester': cs.semester,
+                }
+
+    return jsonify({
+        'code': 200,
+        'data': {
+            'classroom': classroom.to_dict(),
+            'timetable': matrix,
+        }
+    })

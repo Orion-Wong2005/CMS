@@ -6,47 +6,81 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>排课管理</h2>
-        <a href="{{ url_for('admin_bp.schedule_add') }}" class="btn btn-primary">添加排课</a>
+        <a href="{{ url_for('admin_bp.schedule_add') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>添加排课
+        </a>
     </div>
-    
+
     <div class="card">
         <div class="card-body">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>课程编号</th>
-                        <th>课程名称</th>
-                        <th>授课教师</th>
-                        <th>星期</th>
-                        <th>时间</th>
-                        <th>教室</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for schedule in schedules %}
-                    <tr>
-                        <td>{{ schedule.course.course_id }}</td>
-                        <td>{{ schedule.course.course_name }}</td>
-                        <td>{{ schedule.course.teacher.name if schedule.course.teacher else '未分配' }}</td>
-                        <td>周{{ schedule.day_of_week }}</td>
-                        <td>{{ schedule.start_time }}-{{ schedule.end_time }}</td>
-                        <td>{{ schedule.classroom }}</td>
-                        <td>
-                            <a href="{{ url_for('admin_bp.schedule_edit', schedule_id=schedule.id) }}" 
-                               class="btn btn-sm btn-outline-primary">编辑</a>
-                            <a href="{{ url_for('admin_bp.schedule_delete', schedule_id=schedule.id) }}" 
-                               class="btn btn-sm btn-outline-danger"
-                               onclick="return confirm('确定要删除该排课吗？')">删除</a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center">暂无排课数据</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>课程编号</th>
+                            <th>课程名称</th>
+                            <th>授课教师</th>
+                            <th>学期</th>
+                            <th>星期</th>
+                            <th>节次</th>
+                            <th>上课时间</th>
+                            <th>教室</th>
+                            <th>周次范围</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in schedules %}
+                        <tr>
+                            <td>{{ schedule.course.course_id }}</td>
+                            <td>{{ schedule.course.course_name }}</td>
+                            <td>{{ schedule.course.teacher.name if schedule.course.teacher else '未分配' }}</td>
+                            <td>{{ schedule.semester or '-' }}</td>
+                            <td>{{ ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'][schedule.day_of_week] }}</td>
+                            <td>第{{ schedule.start_time }}-{{ schedule.end_time }}节</td>
+                            <td>
+                                {% set period_data = {
+                                    1: {'start': '08:00', 'end': '08:45'},
+                                    2: {'start': '08:55', 'end': '09:40'},
+                                    3: {'start': '10:10', 'end': '10:55'},
+                                    4: {'start': '11:05', 'end': '11:50'},
+                                    5: {'start': '14:00', 'end': '14:45'},
+                                    6: {'start': '14:55', 'end': '15:40'},
+                                    7: {'start': '16:10', 'end': '16:55'},
+                                    8: {'start': '17:05', 'end': '17:50'}
+                                } %}
+                                {% set s = period_data.get(schedule.start_time|int) %}
+                                {% set e = period_data.get(schedule.end_time|int) %}
+                                {% if s and e %}
+                                    <span class="text-primary">{{ s.start }}-{{ e.end }}</span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ schedule.classroom }}</td>
+                            <td>
+                                {% if schedule.week_start and schedule.week_end %}
+                                    第{{ schedule.week_start }}-{{ schedule.week_end }}周
+                                {% else %}
+                                    全学期
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin_bp.schedule_edit', schedule_id=schedule.id) }}"
+                                   class="btn btn-sm btn-outline-primary">编辑</a>
+                                <a href="{{ url_for('admin_bp.schedule_delete', schedule_id=schedule.id) }}"
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('确定要删除该排课吗？')">删除</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center">暂无排课数据</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

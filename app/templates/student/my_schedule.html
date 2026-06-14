@@ -5,35 +5,48 @@
 {% block content %}
 <div class="container mt-4">
     <h2 class="mb-4">我的课表</h2>
-    
+
     <div class="card">
+        <div class="card-header bg-light">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-calendar3 me-2"></i>
+                <span>课程时间：上午 <strong>08:00-11:50</strong> | 下午 <strong>14:00-17:50</strong></span>
+                <span class="ms-3 text-muted small">45分钟小课 + 10分钟课间，大节之间休息30分钟</span>
+            </div>
+        </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered text-center">
+                <table class="table table-bordered text-center align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 80px;">节次</th>
+                            <th style="width: 70px;">节次</th>
+                            <th style="width: 110px;">时间</th>
                             {% for day in days %}
                             <th>{{ day }}</th>
                             {% endfor %}
                         </tr>
                     </thead>
                     <tbody>
-                        {% for period in range(1, 13) %}
+                        {% for period in period_times %}
                         <tr>
-                            <td class="align-middle">{{ period }}</td>
+                            <td class="fw-bold">{{ period.num }}</td>
+                            <td class="text-muted small">{{ period.time }}</td>
                             {% for day in range(1, 8) %}
-                                {% set course = schedule_table[period][day] %}
+                                {% set course = schedule_table[period.num][day] %}
                                 {% if course %}
                                     {% if course.is_first %}
-                                    <td rowspan="{{ course.rowspan }}" class="align-middle bg-primary text-white">
+                                    <td rowspan="{{ course.rowspan }}" class="align-middle bg-primary text-white"
+                                        style="min-width: 120px;">
                                         <strong>{{ course.course_name }}</strong><br>
                                         <small>{{ course.teacher }}</small><br>
-                                        <small>{{ course.classroom }}</small>
+                                        <small><i class="bi bi-geo-alt me-1"></i>{{ course.classroom }}</small>
+                                        {% if course.semester %}
+                                        <br><small class="text-white-50">{{ course.semester }}</small>
+                                        {% endif %}
                                     </td>
                                     {% endif %}
                                 {% else %}
-                                <td></td>
+                                <td class="text-muted"></td>
                                 {% endif %}
                             {% endfor %}
                         </tr>
@@ -42,6 +55,10 @@
                 </table>
             </div>
         </div>
+    </div>
+
+    <div class="mt-3 text-muted small">
+        <i class="bi bi-info-circle me-1"></i> 提示：课程时间按标准作息安排：上午8:00-11:50，下午14:00-17:50。两节小课(45+10+45分钟)组成一大节课。
     </div>
 </div>
 {% endblock %}

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教室课表查询 - 课程管理系统</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <!-- 自定义本地样式（你项目里的 static/css/style.css） -->
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    <style>
+        /* 防止导航栏遮挡页面内容 */
+        body {
+            padding-top: 56px;
+        }
+        /* 导航栏激活状态样式 */
+        .navbar-nav .nav-link.active {
+            font-weight: 600;
+            color: #0d6efd !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <!-- 系统名称 -->
+            <a class="navbar-brand" href="/auth/login">
+                <i class="bi bi-book-half me-2"></i>课程管理系统
+            </a>
+            
+            <!-- 移动端折叠按钮 -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- 导航菜单 -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    
+                        
+                            <!-- 学生菜单 -->
+                            <li class="nav-item">
+                                <a class="nav-link " 
+                                   href="/student/">
+                                    <i class="bi bi-house me-1"></i>首页
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link " 
+                                   href="/student/courses">
+                                    <i class="bi bi-cart-plus me-1"></i>选课中心
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link " 
+                                   href="/student/my-courses">
+                                    <i class="bi bi-bookmark-check me-1"></i>我的课程
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link " 
+                                   href="/student/grades">
+                                    <i class="bi bi-clipboard-check me-1"></i>我的成绩
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link "
+                                   href="/student/schedule">
+                                    <i class="bi bi-calendar3 me-1"></i>我的课表
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active"
+                                   href="/student/classroom-schedule">
+                                    <i class="bi bi-building me-1"></i>教室课表
+                                </a>
+                            </li>
+                        
+                    
+                </ul>
+
+                <!-- 右侧用户信息和退出按钮 -->
+                <ul class="navbar-nav">
+                    
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle me-1"></i>
+                                student
+                                <span class="badge bg-secondary ms-1">
+                                    学生
+                                </span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                
+                                <li>
+                                    <a class="dropdown-item" href="/student/profile">
+                                        <i class="bi bi-person-gear me-2"></i>修改个人信息
+                                    </a>
+                                </li>
+                                
+                                
+                                <li>
+                                    <a class="dropdown-item" href="/auth/change-password">
+                                        <i class="bi bi-key me-2"></i>修改密码
+                                    </a>
+                                </li>
+                                
+                                <li><hr class="dropdown-divider"></li>
+                                
+                                <li>
+                                    <a class="dropdown-item" href="/auth/logout">
+                                        <i class="bi bi-box-arrow-right me-2"></i>退出登录
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 消息闪现 -->
+    
+        
+    
+
+    <!-- 页面内容 -->
+    
+<div class="container mt-4">
+    <h2 class="mb-4"><i class="bi bi-building me-2"></i>教室课表查询</h2>
+    <p class="text-muted">查看每间教室每天的课程安排</p>
+
+    <!-- 查询条件 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="classroomSelect" class="form-label">选择教室</label>
+                    <select class="form-select" id="classroomSelect">
+                        <option value="">-- 请选择教室 --</option>
+                        
+                        <option value="1">教1-101 (第一教学楼 1层 容量:60)</option>
+                        
+                        <option value="2">教1-201 (第一教学楼 2层 容量:80)</option>
+                        
+                        <option value="4">教3-102 (第三教学楼 1层 容量:100)</option>
+                        
+                        <option value="3">教2-305 (第二教学楼 3层 容量:40)</option>
+                        
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="semesterInput" class="form-label">学期（可选）</label>
+                    <input type="text" class="form-control" id="semesterInput" placeholder="如：2025-2026-2">
+                </div>
+                <div class="col-md-2">
+                    <label for="weekInput" class="form-label">周次（可选）</label>
+                    <input type="number" class="form-control" id="weekInput" placeholder="1-20" min="1" max="20">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" id="queryBtn">
+                        <i class="bi bi-search me-1"></i>查询
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 课表展示区域 -->
+    <div id="timetableContainer">
+        <div class="card">
+            <div class="card-body text-center text-muted py-5">
+                <i class="bi bi-search" style="font-size: 3rem;"></i>
+                <p class="mt-3">请选择教室后点击查询</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <!-- 页脚 -->
+    <footer class="bg-light py-3 mt-5">
+        <div class="container text-center text-muted">
+            <small>© 2026 课程管理系统 | 基于 Flask + SQLite 开发</small>
+        </div>
+    </footer>
+
+    <!-- jQuery (必须在 Bootstrap 之前) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- 自定义本地 JS（static/js/common.js） -->
+    <script src="/static/js/common.js"></script>
+
+    <!-- 页面自有脚本 -->
+    
+<script>
+$(function() {
+    $('#queryBtn').on('click', function() {
+        var classroomId = $('#classroomSelect').val();
+        if (!classroomId) {
+            alert('请先选择教室');
+            return;
+        }
+
+        var semester = $('#semesterInput').val().trim();
+        var week = $('#weekInput').val();
+
+        var url = '/student/api/classroom-timetable?classroom_id=' + classroomId;
+        if (semester) url += '&semester=' + encodeURIComponent(semester);
+        if (week) url += '&week=' + week;
+
+        $('#timetableContainer').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">加载中...</p></div>');
+
+        $.getJSON(url, function(res) {
+            if (res.code !== 200) {
+                $('#timetableContainer').html('<div class="alert alert-danger">' + (res.message || '查询失败') + '</div>');
+                return;
+            }
+
+            var data = res.data;
+            var classroom = data.classroom;
+            var timetable = data.timetable;
+
+            var dayNames = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
+            var html = '<div class="card">';
+            html += '<div class="card-header bg-light">';
+            html += '<h5 class="mb-0"><i class="bi bi-door-closed me-2"></i>' + classroom.classroom_number;
+            html += ' <small class="text-muted">' + classroom.building + ' ' + (classroom.floor || '') + '层 | 容量:' + classroom.capacity + ' | 类型:' + classroom.type + '</small></h5>';
+            html += '</div>';
+            html += '<div class="card-body p-0">';
+            html += '<div class="table-responsive">';
+            html += '<table class="table table-bordered text-center align-middle mb-0">';
+            html += '<thead class="table-light"><tr>';
+            html += '<th style="width:70px;">节次</th><th style="width:110px;">时间</th>';
+            for (var d = 1; d <= 7; d++) {
+                html += '<th>' + dayNames[d] + '</th>';
+            }
+            html += '</tr></thead><tbody>';
+
+            for (var i = 0; i < timetable.length; i++) {
+                var row = timetable[i];
+                html += '<tr>';
+                html += '<td class="fw-bold">' + row.section + '</td>';
+                html += '<td class="text-muted small">' + row.time + '</td>';
+                for (var d = 1; d <= 7; d++) {
+                    var cell = row['day_' + d];
+                    if (cell) {
+                        html += '<td class="bg-info bg-opacity-25">';
+                        html += '<strong>' + cell.course_name + '</strong><br>';
+                        html += '<small>' + cell.teacher + '</small><br>';
+                        html += '<small class="text-muted">' + cell.classroom + '</small>';
+                        if (cell.semester) {
+                            html += '<br><small class="text-muted">' + cell.semester + '</small>';
+                        }
+                        html += '</td>';
+                    } else {
+                        html += '<td></td>';
+                    }
+                }
+                html += '</tr>';
+            }
+
+            html += '</tbody></table></div></div>';
+            html += '<div class="card-footer text-muted small">';
+            html += '<i class="bi bi-info-circle me-1"></i> 课程时间：上午 08:00-11:50 | 下午 14:00-17:50。45分钟小课+10分钟课间，大节之间休息30分钟。';
+            html += '</div></div>';
+
+            $('#timetableContainer').html(html);
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            $('#timetableContainer').html('<div class="alert alert-danger">查询失败: ' + textStatus + '，请重试</div>');
+        });
+    });
+
+    // 支持回车键查询
+    $('#weekInput, #semesterInput').on('keypress', function(e) {
+        if (e.which === 13) {
+            $('#queryBtn').trigger('click');
+        }
+    });
+});
+</script>
+
+</body>
+</html>

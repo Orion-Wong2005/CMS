@@ -3,6 +3,7 @@ from app.extensions import db
 from app.models import User, Student, Teacher, Course, Schedule
 from app.utils.decorators import admin_required
 from app.utils.md5 import md5_encrypt
+from app.utils.schedule_utils import get_all_periods, get_period_time_range, PERIOD_TIMES, TOTAL_PERIODS
 
 admin_bp = Blueprint('admin_bp', __name__, url_prefix='/admin')
 
@@ -344,52 +345,77 @@ def schedule_list():
 def schedule_add():
     """添加排课"""
     courses = Course.query.all()
-    
+
     if request.method == 'POST':
         course_id = request.form.get('course_id', '').strip()
         day_of_week = request.form.get('day_of_week', '').strip()
         start_time = request.form.get('start_time', '').strip()
         end_time = request.form.get('end_time', '').strip()
         classroom = request.form.get('classroom', '').strip()
-        
+        semester = request.form.get('semester', '').strip()
+        week_start = request.form.get('week_start', '').strip()
+        week_end = request.form.get('week_end', '').strip()
+
         # 表单验证
         if not course_id or not day_of_week or not start_time or not end_time or not classroom:
-            flash('所有字段不能为空', 'danger')
-            return render_template('admin/schedule_form.html', courses=courses)
-        
+            flash('课程、星期、节次、教室不能为空', 'danger')
+            return render_template('admin/schedule_form.html', courses=courses,
+                                  periods=get_all_periods(), total_periods=TOTAL_PERIODS)
+
         try:
             day_of_week = int(day_of_week)
             if day_of_week < 1 or day_of_week > 7:
                 raise ValueError
-        except ValueError:
-            flash('星期必须是1-7之间的数字', 'danger')
-            return render_template('admin/schedule_form.html', courses=courses)
-        
+            start_period = int(start_time)
+            end_period = int(end_time)
+            if start_period < 1 or start_period > TOTAL_PERIODS:
+                raise ValueError(f'开始节次必须在1-{TOTAL_PERIODS}之间')
+            if end_period < 1 or end_period > TOTAL_PERIODS:
+                raise ValueError(f'结束节次必须在1-{TOTAL_PERIODS}之间')
+            if start_period > end_period:
+                raise ValueError('开始节次不能大于结束节次')
+        except ValueError as e:
+            flash(str(e) if str(e) != str(int('x')) else '星期/节次必须是有效数字', 'danger')
+            return render_template('admin/schedule_form.html', courses=courses,
+                                  periods=get_all_periods(), total_periods=TOTAL_PERIODS)
+
+        # 处理周次范围
+        ws = int(week_start) if week_start else None
+        we = int(week_end) if week_end else None
+
         # 冲突检查
         course = Course.query.get(course_id)
-        conflict = check_schedule_conflict(course_id, day_of_week, start_time, end_time, classroom, course.teacher_id)
+        conflict = check_schedule_conflict(
+            course_id, day_of_week, start_time, end_time, classroom,
+            course.teacher_id if course else None, semester=semester
+        )
         if conflict:
             flash(conflict, 'danger')
-            return render_template('admin/schedule_form.html', courses=courses)
-        
+            return render_template('admin/schedule_form.html', courses=courses,
+                                  periods=get_all_periods(), total_periods=TOTAL_PERIODS)
+
         try:
             schedule = Schedule(
                 course_id=course_id,
                 day_of_week=day_of_week,
                 start_time=start_time,
                 end_time=end_time,
-                classroom=classroom
+                classroom=classroom,
+                semester=semester if semester else None,
+                week_start=ws,
+                week_end=we
             )
             db.session.add(schedule)
             db.session.commit()
-            
+
             flash('排课添加成功', 'success')
             return redirect(url_for('admin_bp.schedule_list'))
         except Exception as e:
             db.session.rollback()
             flash(f'添加失败：{str(e)}', 'danger')
-    
-    return render_template('admin/schedule_form.html', courses=courses)
+
+    return render_template('admin/schedule_form.html', courses=courses,
+                          periods=get_all_periods(), total_periods=TOTAL_PERIODS)
 
 @admin_bp.route('/schedules/edit/<int:schedule_id>', methods=['GET', 'POST'])
 @admin_required
@@ -397,51 +423,73 @@ def schedule_edit(schedule_id):
     """编辑排课"""
     schedule = Schedule.query.get_or_404(schedule_id)
     courses = Course.query.all()
-    
+
     if request.method == 'POST':
         course_id = request.form.get('course_id', '').strip()
         day_of_week = request.form.get('day_of_week', '').strip()
         start_time = request.form.get('start_time', '').strip()
         end_time = request.form.get('end_time', '').strip()
         classroom = request.form.get('classroom', '').strip()
-        
+        semester = request.form.get('semester', '').strip()
+        week_start = request.form.get('week_start', '').strip()
+        week_end = request.form.get('week_end', '').strip()
+
         # 表单验证
         if not course_id or not day_of_week or not start_time or not end_time or not classroom:
-            flash('所有字段不能为空', 'danger')
-            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses)
-        
+            flash('课程、星期、节次、教室不能为空', 'danger')
+            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses,
+                                  periods=get_all_periods(), total_periods=TOTAL_PERIODS)
+
         try:
             day_of_week = int(day_of_week)
             if day_of_week < 1 or day_of_week > 7:
                 raise ValueError
-        except ValueError:
-            flash('星期必须是1-7之间的数字', 'danger')
-            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses)
-        
+            start_period = int(start_time)
+            end_period = int(end_time)
+            if start_period < 1 or start_period > TOTAL_PERIODS:
+                raise ValueError(f'开始节次必须在1-{TOTAL_PERIODS}之间')
+            if end_period < 1 or end_period > TOTAL_PERIODS:
+                raise ValueError(f'结束节次必须在1-{TOTAL_PERIODS}之间')
+            if start_period > end_period:
+                raise ValueError('开始节次不能大于结束节次')
+        except ValueError as e:
+            flash(str(e), 'danger')
+            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses,
+                                  periods=get_all_periods(), total_periods=TOTAL_PERIODS)
+
         # 冲突检查（排除当前排课）
         course = Course.query.get(course_id)
         conflict = check_schedule_conflict(
-            course_id, day_of_week, start_time, end_time, classroom, course.teacher_id, exclude_id=schedule_id
+            course_id, day_of_week, start_time, end_time, classroom,
+            course.teacher_id if course else None, exclude_id=schedule_id, semester=semester
         )
         if conflict:
             flash(conflict, 'danger')
-            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses)
-        
+            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses,
+                                  periods=get_all_periods(), total_periods=TOTAL_PERIODS)
+
+        ws = int(week_start) if week_start else None
+        we = int(week_end) if week_end else None
+
         try:
             schedule.course_id = course_id
             schedule.day_of_week = day_of_week
             schedule.start_time = start_time
             schedule.end_time = end_time
             schedule.classroom = classroom
+            schedule.semester = semester if semester else None
+            schedule.week_start = ws
+            schedule.week_end = we
             db.session.commit()
-            
+
             flash('排课更新成功', 'success')
             return redirect(url_for('admin_bp.schedule_list'))
         except Exception as e:
             db.session.rollback()
             flash(f'更新失败：{str(e)}', 'danger')
-    
-    return render_template('admin/schedule_form.html', schedule=schedule, courses=courses)
+
+    return render_template('admin/schedule_form.html', schedule=schedule, courses=courses,
+                          periods=get_all_periods(), total_periods=TOTAL_PERIODS)
 
 @admin_bp.route('/schedules/delete/<int:schedule_id>')
 @admin_required
@@ -462,25 +510,31 @@ def schedule_delete(schedule_id):
 # ==============================
 # 排课冲突检查工具函数
 # ==============================
-def check_schedule_conflict(course_id, day_of_week, start_time, end_time, classroom, teacher_id, exclude_id=None):
+def check_schedule_conflict(course_id, day_of_week, start_time, end_time, classroom, teacher_id, exclude_id=None, semester=None):
     """
     检查排课冲突
     返回冲突信息，无冲突返回None
     """
-    # 1. 检查同一教室同一时间是否有其他课程
+    # 1. 检查同一教室同一学期同一时间是否有其他课程
     classroom_conflict = Schedule.query.filter(
         Schedule.classroom == classroom,
         Schedule.day_of_week == day_of_week,
         Schedule.start_time == start_time,
         Schedule.end_time == end_time
     )
+    if semester:
+        classroom_conflict = classroom_conflict.filter(Schedule.semester == semester)
     if exclude_id:
         classroom_conflict = classroom_conflict.filter(Schedule.id != exclude_id)
-    
+
     if classroom_conflict.first():
-        return f"教室 {classroom} 在周{day_of_week} {start_time}-{end_time} 已有课程安排"
-    
-    # 2. 检查同一教师同一时间是否有其他课程
+        msg = f"教室 {classroom} 在周{day_of_week} 第{start_time}-{end_time}节"
+        if semester:
+            msg += f" ({semester})"
+        msg += " 已有课程安排"
+        return msg
+
+    # 2. 检查同一教师同一学期同一时间是否有其他课程
     if teacher_id:
         teacher_conflict = Schedule.query.join(
             Course, Course.course_id == Schedule.course_id
@@ -490,10 +544,16 @@ def check_schedule_conflict(course_id, day_of_week, start_time, end_time, classr
             Schedule.start_time == start_time,
             Schedule.end_time == end_time
         )
+        if semester:
+            teacher_conflict = teacher_conflict.filter(Schedule.semester == semester)
         if exclude_id:
             teacher_conflict = teacher_conflict.filter(Schedule.id != exclude_id)
-        
+
         if teacher_conflict.first():
-            return f"该教师在周{day_of_week} {start_time}-{end_time} 已有其他课程安排"
-    
+            msg = f"该教师在周{day_of_week} 第{start_time}-{end_time}节"
+            if semester:
+                msg += f" ({semester})"
+            msg += " 已有其他课程安排"
+            return msg
+
     return None
