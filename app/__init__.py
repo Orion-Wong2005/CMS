@@ -1,7 +1,6 @@
-from flask import Flask
+from flask import Flask, render_template, redirect, url_for
 from app.extensions import db, migrate
 from app.config import Config
-from flask import Flask, render_template
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -33,6 +32,14 @@ def create_app(config_class=Config):
     app.register_blueprint(schedule_bp, url_prefix='/schedule')
     app.register_blueprint(classroom_bp, url_prefix='/classroom')
     app.register_blueprint(semester_bp, url_prefix='/semester')
+
+    # ==============================
+    # 根路由
+    # ==============================
+    @app.route('/')
+    def index():
+        """默认主页，重定向到登录页面"""
+        return redirect(url_for('auth_bp.login'))
 
     # ==============================
     # 全局错误处理器
