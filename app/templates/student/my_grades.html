@@ -4,7 +4,12 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4">我的成绩</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>我的成绩</h2>
+        <button id="exportGradesBtn" class="btn btn-success">
+            <i class="bi bi-download me-1"></i>导出学分绩(CSV)
+        </button>
+    </div>
     
     <!-- 绩点统计卡片 -->
     <div class="card mb-4 bg-light">
@@ -55,4 +60,48 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 导出学分绩功能
+    document.getElementById('exportGradesBtn').addEventListener('click', function() {
+        fetch('{{ url_for('student_bp.grades_export_data') }}')
+            .then(response => response.json())
+            .then(data => {
+                // 生成CSV内容
+                let csvContent = '\uFEFF'; // UTF-8 BOM
+                
+                // 添加头部信息
+                data.header_info.forEach(row => {
+                    csvContent += row.join(',') + '\n';
+                });
+                csvContent += '\n';
+                
+                // 添加表头
+                csvContent += data.headers.join(',') + '\n';
+                
+                // 添加数据行
+                data.rows.forEach(row => {
+                    csvContent += row.join(',') + '\n';
+                });
+                
+                // 创建Blob对象
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', data.filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            })
+            .catch(error => {
+                alert('导出失败：' + error.message);
+            });
+    });
+});
+</script>
 {% endblock %}

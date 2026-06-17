@@ -1,339 +1,434 @@
-# 一、项目开发方向
+# 课程管理系统
 
-## 1. 系统定位
-课程管理系统主要用于对课程、教师、学生、选课、成绩、排课等信息进行统一管理，实现教务业务的数字化、规范化和高效化。
+基于 Flask + MySQL + Bootstrap 开发的高校课程管理系统，支持管理员、教师、学生三种角色，提供课程管理、选课、成绩管理、排课等功能。
 
-## 2. 目标用户
-- **管理员**：管理课程、教师、学生、选课、成绩、系统账号等
-- **教师**：查看所授课程、学生名单、录入成绩
-- **学生**：查看课程信息、进行选课、查询成绩
-- 可根据需求扩展为学院教务人员使用
+---
 
-## 3. 核心功能模块
-建议分为以下几个模块：
+## 一、功能特性
 
-### （1）用户与权限管理
+### 🔐 用户管理
 - 用户登录/退出
-- 角色管理（管理员、教师、学生）
-- 权限控制
+- 角色权限控制（管理员、教师、学生）
+- 密码修改
 
-### （2）学生信息管理
-- 添加、修改、删除、查询学生信息
-- 学生学号、姓名、专业、班级、联系方式等
+### 👨‍🎓 学生管理
+- 学生信息增删改查
+- 学号自动生成（年份+身份码+学院码+专业码+计数码）
+- 学生账户初始化
 
-### （3）教师信息管理
-- 添加、修改、删除、查询教师信息
-- 工号、姓名、院系、职称、联系方式等
+### 👨‍🏫 教师管理
+- 教师信息增删改查
+- 职称管理（助教、讲师、副教授、教授）
 
-### （4）课程信息管理
-- 添加、修改、删除、查询课程
-- 课程编号、课程名称、学分、学时、任课教师、上课时间、地点等
+### 📚 课程管理
+- 课程信息增删改查
+- 学期管理
+- 学分设置
 
-### （5）选课管理
-- 学生选课
-- 退课
-- 查看选课结果
+### 📝 选课管理
+- 学生选课/退课
 - 选课人数限制
+- 选课状态管理
 
-### （6）成绩管理
+### 📊 成绩管理
 - 教师录入/修改成绩
 - 学生查询成绩
-- 成绩统计分析
+- 绩点计算
+- 成绩导出（CSV）
 
-### （7）排课管理（可选）
-- 课程安排时间、教室
-- 避免时间冲突
-- 查看课表
+### 🏫 教室管理
+- 教学楼管理
+- 教室管理（编码规则：楼号+层数+计数码）
+- 排课管理
 
-### （8）统计与报表
-- 课程人数统计
-- 学生成绩分布
-- 教师授课统计
-- 导出 Excel 报表
-
----
-
-# 二、技术选型建议
-
-## 1. 后端
-Python 推荐使用以下框架之一：
-- **Flask**：轻量、灵活，适合课程设计和中小型系统
-- **Django**：功能完整，自带后台管理，开发效率高
-
-### 推荐：
-- 如果你希望**开发快、结构清晰**：用 **Django**
-- 如果你希望**学习数据库和接口开发更灵活**：用 **Flask**
-
-## 2. 数据库
-- **MySQL**：作为主数据库，存储学生、教师、课程、选课、成绩等数据
-
-## 3. 前端
-可按开发难度分层：
-- 简单方案：HTML + CSS + JavaScript + Bootstrap
-- 前后端分离方案：Vue / React + Python 后端接口
-
-如果是课程设计，推荐先使用：
-- **Bootstrap + Jinja2（Flask）**
-- 或 **Django 模板**
-
-## 4. 数据库连接
-- `pymysql`
-- `mysqlclient`
-- SQLAlchemy（ORM，推荐）
+### 📅 课表管理
+- 学生课表查看
+- 教师课表查看
+- 课表导出（CSV）
 
 ---
 
-# 三、数据库设计方向
+## 二、技术栈
 
-建议至少设计以下数据表：
-
-## 1. 用户表 `users`
-- id
-- username
-- password
-- role（admin/teacher/student）
-- create_time
-
-## 2. 学生表 `students`
-- student_id
-- name
-- gender
-- major
-- class_name
-- phone
-- email
-
-## 3. 教师表 `teachers`
-- teacher_id
-- name
-- gender
-- department
-- title
-- phone
-- email
-
-## 4. 课程表 `courses`
-- course_id
-- course_name
-- credit
-- hours
-- teacher_id
-- semester
-- capacity
-
-## 5. 选课表 `enrollments`
-- id
-- student_id
-- course_id
-- enroll_time
-- status
-
-## 6. 成绩表 `grades`
-- id
-- student_id
-- course_id
-- grade
-- remark
-
-## 7. 排课表（可选）`schedule`
-- id
-- course_id
-- day_of_week
-- start_time
-- end_time
-- classroom
+| 分类 | 技术 | 版本 |
+|------|------|------|
+| 框架 | Flask | 3.1.3 |
+| 数据库 | MySQL | 8.0+ |
+| ORM | SQLAlchemy | 2.0.31 |
+| 前端 | Bootstrap | 5.x |
+| 模板引擎 | Jinja2 | 3.1.6 |
 
 ---
 
-# 四、系统开发计划
+## 三、依赖列表
 
-下面给你一个比较合理的开发步骤。
+### 核心依赖
 
----
+| 依赖包 | 版本 | 说明 |
+|--------|------|------|
+| Flask | 3.1.3 | Web 框架 |
+| Flask-SQLAlchemy | 3.1.1 | ORM 框架 |
+| Flask-Migrate | 4.1.0 | 数据库迁移 |
+| PyMySQL | 1.2.0 | MySQL 驱动 |
+| Werkzeug | 3.1.8 | WSGI 工具 |
+| Jinja2 | 3.1.6 | 模板引擎 |
 
-## 第一阶段：需求分析（1 周）
-### 任务：
-- 明确系统功能范围
-- 确定用户角色与权限
-- 收集课程管理业务流程
-- 画用例图、业务流程图
+### 其他依赖
 
-### 输出成果：
-- 需求说明书
-- 功能模块图
-- 用例图
-
----
-
-## 第二阶段：数据库设计（1 周）
-### 任务：
-- 设计概念结构模型（ER 图）
-- 设计逻辑结构表
-- 编写 MySQL 建表语句
-- 设置主键、外键、索引
-
-### 输出成果：
-- 数据库设计文档
-- ER 图
-- SQL 建表脚本
+| 依赖包 | 版本 | 说明 |
+|--------|------|------|
+| SQLAlchemy | 2.0.31 | ORM 核心 |
+| alembic | 1.13.1 | 数据库迁移工具 |
+| itsdangerous | 2.2.0 | 安全工具 |
+| click | 8.1.7 | CLI 工具 |
+| blinker | 1.8.2 | 信号库 |
+| python-dateutil | 2.9.0 | 日期处理 |
+| six | 1.16.0 | Python 2/3 兼容 |
+| Mako | 1.3.2 | 模板引擎（迁移用） |
+| markupsafe | 2.1.5 | 安全字符串处理 |
+| openpyxl | 3.1.5 | Excel 处理 |
+| et-xmlfile | 1.1.0 | XML 文件处理 |
 
 ---
 
-## 第三阶段：系统架构设计（1 周）
-### 任务：
-- 确定技术栈（Flask/Django）
-- 设计项目目录结构
-- 设计前后端交互方式
-- 设计权限控制逻辑
+## 四、项目结构
 
-### 输出成果：
-- 系统架构图
-- 项目结构说明
-- 接口设计文档
-
----
-
-## 第四阶段：核心功能开发（2~4 周）
-按模块逐个开发：
-
-### 1. 登录与权限模块
-- 用户登录
-- 身份认证
-- 不同角色访问不同页面
-
-### 2. 基础信息管理模块
-- 学生管理
-- 教师管理
-- 课程管理
-
-### 3. 选课模块
-- 学生选课
-- 课程容量控制
-- 退课功能
-
-### 4. 成绩管理模块
-- 教师录入成绩
-- 学生查看成绩
-- 成绩修改记录
-
-### 5. 查询与统计模块
-- 按课程查询
-- 按学生查询
-- 成绩统计和导出
+```
+CMS-main/
+├── app/                    # 应用目录
+│   ├── blueprints/         # 蓝图路由模块
+│   │   ├── admin.py        # 管理员模块
+│   │   ├── auth.py         # 认证模块
+│   │   ├── classroom.py    # 教室管理
+│   │   ├── course.py       # 课程管理
+│   │   ├── enrollment.py   # 选课管理
+│   │   ├── grade.py        # 成绩管理
+│   │   ├── schedule.py     # 排课管理
+│   │   ├── semester.py     # 学期管理
+│   │   ├── student.py      # 学生模块
+│   │   └── teacher.py      # 教师模块
+│   ├── models/             # 数据模型
+│   ├── templates/          # HTML 模板
+│   ├── static/             # 静态资源
+│   ├── utils/              # 工具函数
+│   ├── __init__.py         # 应用工厂
+│   ├── config.py           # 配置文件
+│   └── extensions.py       # 扩展初始化
+├── migrations/             # 数据库迁移文件
+├── init_demo_data.py       # 测试数据初始化
+├── requirements.txt        # 依赖列表
+├── run.py                  # 启动脚本
+└── README.md               # 项目说明
+```
 
 ---
 
-## 第五阶段：测试与优化（1 周）
-### 任务：
-- 功能测试
-- 数据库测试
-- 权限测试
-- 异常处理
-- 页面优化
+## 五、环境要求
 
-### 测试重点：
-- 重复选课
-- 超容量选课
-- 非法登录
-- 成绩越权修改
-- 数据完整性
+### 1. 操作系统
+- Windows 10/11 (推荐)
+- Linux (Ubuntu 20.04+/CentOS 7+)
+- macOS 10.15+
 
----
+### 2. Python 版本
+- Python 3.8.x 或更高版本
 
-## 第六阶段：部署与文档整理（1 周）
-### 任务：
-- 项目部署到本地服务器或云服务器
-- 整理操作手册
-- 编写项目说明书
-- 准备答辩PPT
+### 3. 数据库
+- MySQL 8.0.x 或更高版本
 
-### 输出成果：
-- 可运行系统
-- 用户手册
-- 项目文档
-- 演示视频/答辩材料
+### 4. 端口要求
+- 默认端口：5000（可在运行时修改）
 
 ---
 
-# 五、推荐的开发流程
+## 六、部署步骤
 
-建议按照以下顺序实现：
+### 步骤 1：安装 Python 环境
 
-1. **先做数据库**
-2. **再做登录和权限**
-3. **再做学生/教师/课程基础信息管理**
-4. **再做选课**
-5. **再做成绩管理**
-6. **最后做统计报表和界面美化**
+#### Windows
+1. 下载 Python 安装包：https://www.python.org/downloads/windows/
+2. 安装时勾选 "Add Python to PATH"
+3. 验证安装：
+   ```bash
+   python --version
+   pip --version
+   ```
 
-这样开发最稳妥，方便逐步验证功能。
+#### Linux (Ubuntu/Debian)
+```bash
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
+```
+
+#### macOS
+```bash
+brew install python3
+```
+
+### 步骤 2：安装 MySQL 数据库
+
+#### Windows
+1. 下载 MySQL Installer：https://dev.mysql.com/downloads/installer/
+2. 安装时选择 "Developer Default" 或 "Server only"
+3. 设置 root 用户密码（建议设置为 `123456`）
+
+#### Linux (Ubuntu/Debian)
+```bash
+sudo apt update
+sudo apt install mysql-server
+sudo systemctl start mysql
+sudo systemctl enable mysql
+```
+
+### 步骤 3：创建项目数据库
+
+1. 登录 MySQL：
+   ```bash
+   mysql -u root -p
+   ```
+
+2. 创建数据库：
+   ```sql
+   CREATE DATABASE course_management_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+
+3. 创建用户并授权（可选）：
+   ```sql
+   CREATE USER 'cms_user'@'localhost' IDENTIFIED BY 'cms_password';
+   GRANT ALL PRIVILEGES ON course_management_system.* TO 'cms_user'@'localhost';
+   FLUSH PRIVILEGES;
+   ```
+
+### 步骤 4：配置项目
+
+1. 进入项目目录：
+   ```bash
+   cd CMS-main
+   ```
+
+2. 修改数据库配置：
+   - 打开 `app/config.py`
+   - 修改数据库连接字符串：
+     ```python
+     SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:123456@localhost:3306/course_management_system'
+     ```
+   - 替换 `root` 为你的 MySQL 用户名
+   - 替换 `123456` 为你的 MySQL 密码
+
+### 步骤 5：安装依赖
+
+```bash
+pip install -r requirements.txt
+```
+
+### 步骤 6：初始化数据库
+
+```bash
+python init_demo_data.py
+```
+
+此脚本会创建以下测试数据：
+- 管理员账户：admin / admin
+- 2 名学生账户
+- 2 名教师账户
+- 2 栋教学楼及其教室
+
+### 步骤 7：启动服务
+
+```bash
+python run.py
+```
+
+### 步骤 8：访问系统
+
+打开浏览器访问：http://localhost:5000
 
 ---
 
-# 六、项目难点与解决建议
+## 七、测试账户
 
-## 1. 数据关联复杂
-课程、学生、教师、成绩之间存在多表关联。
-
-### 建议：
-- 先设计好外键关系
-- 使用 ORM 简化查询
-
-## 2. 权限控制
-不同角色不能越权操作。
-
-### 建议：
-- 登录后保存角色信息
-- 每个页面/接口检查权限
-
-## 3. 数据一致性
-比如重复选课、成绩重复录入、课程超员。
-
-### 建议：
-- 数据库加唯一约束
-- 在业务层做二次校验
-
-## 4. 页面与后端联调
-前端表单提交、数据展示容易出问题。
-
-### 建议：
-- 先实现后端接口，再做页面
-- 统一接口返回格式
+| 角色 | 用户名 | 密码 | 姓名 |
+|------|--------|------|------|
+| 管理员 | admin | admin | - |
+| 学生 | test001stu | test001stu | 虚拟学生男 |
+| 学生 | test002stu | test002stu | 虚拟学生女 |
+| 教师 | test001tea | test001tea | 虚拟教师男 |
+| 教师 | test002tea | test002tea | 虚拟教师女 |
 
 ---
 
-# 七、适合课程设计的推荐方案
+## 八、编码规则
 
-如果你是做课程设计，我建议采用：
+### 学号/工号规则
 
-- **Python + Flask**
-- **MySQL**
-- **Bootstrap 前端模板**
-- **SQLAlchemy ORM**
-- **登录认证 + RBAC 权限控制**
-- **基础 CRUD + 选课 + 成绩管理**
+```
+年份(4位) + 身份码(1位) + 学院码(2位) + 专业码(2位) + 计数码(3位)
 
-这个方案：
-- 难度适中
-- 功能完整
-- 演示效果好
-- 容易写论文和答辩材料
+例如：202611201001
+- 2026: 2026年注册
+- 1: 学生身份 (2为教师)
+- 12: 计算机学院
+- 01: 计算机科学与技术专业
+- 001: 本专业第1个注册
+```
+
+### 教室编码规则
+
+```
+V(虚拟) + 楼号 + 层数 + 计数码
+
+例如：VA1001
+- V: 虚拟标识
+- A: 楼号（A、N等）
+- 10: 楼层（10层）
+- 01: 教室编号
+```
+
+### 学期格式
+
+格式：`XXXX-XXXX-X`
+
+例如：`2026-2027-1` 表示 2026-2027学年第1学期
 
 ---
 
-# 八、可直接采用的项目题目示例
-你可以参考这些命名：
-- 基于 Python 和 MySQL 的课程管理系统设计与实现
-- 基于 Flask 的高校课程管理系统开发
-- 基于 Django 的教务课程管理系统设计
-- 课程选课与成绩管理系统的设计与实现
+## 九、系统配置说明
+
+### 配置文件位置
+`app/config.py`
+
+### 主要配置项
+
+| 配置项 | 默认值 | 说明 |
+|--------|--------|------|
+| SQLALCHEMY_DATABASE_URI | mysql+pymysql://... | 数据库连接字符串 |
+| SQLALCHEMY_TRACK_MODIFICATIONS | False | 是否追踪修改 |
+| SECRET_KEY | secret_key | 会话密钥 |
+| DEBUG | True | 调试模式 |
+
+### 修改配置示例
+
+```python
+class Config:
+    # 数据库配置
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://用户名:密码@localhost:3306/course_management_system'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # 安全配置
+    SECRET_KEY = 'your-secret-key-here'
+    
+    # 调试模式（生产环境设置为 False）
+    DEBUG = True
+```
 
 ---
 
-如果你愿意，我下一步可以继续帮你：
-1. **输出该系统的数据库表结构设计**
-2. **给你生成项目目录结构**
-3. **给你写一份详细开发计划表（按周）**
-4. **直接给出 Flask/Django 的实现方案**
+## 十、常见问题
 
-如果你想，我可以先给你做一个**完整的数据库设计方案**。
+### Q1：MySQL 连接失败
+**现象**：
+```
+sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError) (1045, "Access denied for user 'root'@'localhost'")
+```
+
+**解决方案**：
+1. 检查 MySQL 服务是否启动
+2. 确认用户名和密码正确
+3. 确保数据库 `course_management_system` 已创建
+
+### Q2：端口被占用
+**现象**：
+```
+OSError: [WinError 10048] 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+```
+
+**解决方案**：
+```bash
+# Windows
+netstat -ano | findstr :5000
+taskkill /F /PID <进程ID>
+
+# Linux/macOS
+lsof -i :5000
+kill -9 <进程ID>
+```
+
+### Q3：依赖安装失败
+**现象**：
+```
+ERROR: Could not install packages due to an OSError: [WinError 5] 拒绝访问
+```
+
+**解决方案**：
+```bash
+pip install -r requirements.txt --user
+```
+
+### Q4：数据库表不存在
+**现象**：
+```
+sqlalchemy.exc.ProgrammingError: (pymysql.err.ProgrammingError) (1146, "Table 'course_management_system.users' doesn't exist")
+```
+
+**解决方案**：
+```bash
+python init_demo_data.py
+```
+
+---
+
+## 十一、生产环境部署建议
+
+### 1. 使用 Gunicorn（Linux）
+```bash
+pip install gunicorn
+gunicorn -w 4 -b 0.0.0.0:5000 run:app
+```
+
+### 2. 使用 Nginx 反向代理
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+### 3. 关闭调试模式
+修改 `app/config.py`：
+```python
+DEBUG = False
+```
+
+### 4. 设置防火墙规则（Linux）
+```bash
+sudo ufw allow 5000/tcp
+sudo ufw enable
+```
+
+---
+
+## 十二、许可证
+
+MIT License
+
+---
+
+## 十三、版本信息
+
+| 项目 | 版本 |
+|------|------|
+| 课程管理系统 | v2.0 |
+| Flask | 3.1.3 |
+| MySQL | 8.0+ |
+
+---
+
+**文档版本**: v1.0  
+**生成日期**: 2026年6月  
+**适用环境**: Windows/Linux/macOS

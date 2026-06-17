@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}楼栋管理 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>楼栋管理</h2>
+        <button class="btn btn-primary" onclick="showAddModal()">添加楼栋</button>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>楼栋编号</th>
+                        <th>楼栋名称</th>
+                        <th>校区</th>
+                        <th>楼层范围</th>
+                        <th>教室数量</th>
+                        <th>备注</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="buildingTable">
+                    {% for building in buildings %}
+                    <tr id="row-{{ building.id }}">
+                        <td>{{ building.building_code }}</td>
+                        <td>{{ building.building_name }}</td>
+                        <td>{{ building.campus }}</td>
+                        <td>{{ building.min_floor }}-{{ building.max_floor }}层</td>
+                        <td>{{ building.classrooms.count() }}</td>
+                        <td>{{ building.description or '-' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="showEditModal({{ building.id }})">编辑</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteBuilding({{ building.id }})">删除</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if not buildings %}
+            <div class="text-center text-muted py-4">
+                暂无楼栋数据，请点击"添加楼栋"按钮创建
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 添加/编辑楼栋 Modal -->
+<div class="modal fade" id="buildingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">添加楼栋</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="buildingForm">
+                    <input type="hidden" id="building_id">
+                    <div class="mb-3">
+                        <label for="building_code" class="form-label">楼栋编号 *</label>
+                        <input type="text" class="form-control" id="building_code" required placeholder="例如：A01">
+                    </div>
+                    <div class="mb-3">
+                        <label for="building_name" class="form-label">楼栋名称 *</label>
+                        <input type="text" class="form-control" id="building_name" required placeholder="例如：教学楼A">
+                    </div>
+                    <div class="mb-3">
+                        <label for="campus" class="form-label">校区</label>
+                        <input type="text" class="form-control" id="campus" value="校本部" placeholder="例如：校本部">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">楼层范围</label>
+                        <div class="row">
+                            <div class="col">
+                                <input type="number" min="-5" max="50" class="form-control" id="min_floor" value="1" placeholder="最低楼层">
+                            </div>
+                            <div class="col-auto mt-2">
+                                <span class="align-middle">~</span>
+                            </div>
+                            <div class="col">
+                                <input type="number" min="1" max="50" class="form-control" id="max_floor" value="5" placeholder="最高楼层">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">备注</label>
+                        <textarea class="form-control" id="description" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveBuilding()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let modal;
+let currentEditId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    modal = new bootstrap.Modal(document.getElementById('buildingModal'));
+});
+
+function showAddModal() {
+    currentEditId = null;
+    document.getElementById('modalTitle').textContent = '添加楼栋';
+    document.getElementById('buildingForm').reset();
+    document.getElementById('building_id').value = '';
+    document.getElementById('campus').value = '校本部';
+    document.getElementById('min_floor').value = '1';
+    document.getElementById('max_floor').value = '5';
+    modal.show();
+}
+
+function showEditModal(id) {
+    currentEditId = id;
+    document.getElementById('modalTitle').textContent = '编辑楼栋';
+    
+    // 获取楼栋数据
+    fetch(`/classroom/api/buildings/${id}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.code === 200) {
+                const building = data.data;
+                document.getElementById('building_id').value = building.id;
+                document.getElementById('building_code').value = building.building_code;
+                document.getElementById('building_name').value = building.building_name;
+                document.getElementById('campus').value = building.campus || '校本部';
+                document.getElementById('min_floor').value = building.min_floor || '1';
+                document.getElementById('max_floor').value = building.max_floor || '5';
+                document.getElementById('description').value = building.description || '';
+                modal.show();
+            }
+        });
+}
+
+function saveBuilding() {
+    const id = document.getElementById('building_id').value;
+    const data = {
+        building_code: document.getElementById('building_code').value,
+        building_name: document.getElementById('building_name').value,
+        campus: document.getElementById('campus').value,
+        min_floor: parseInt(document.getElementById('min_floor').value) || 1,
+        max_floor: parseInt(document.getElementById('max_floor').value) || 5,
+        description: document.getElementById('description').value
+    };
+    
+    if (!data.building_code || !data.building_name) {
+        alert('请填写楼栋编号和名称');
+        return;
+    }
+    
+    if (data.min_floor > data.max_floor) {
+        alert('最低楼层不能大于最高楼层');
+        return;
+    }
+    
+    const url = id ? `/classroom/api/buildings/${id}` : '/classroom/api/buildings';
+    const method = id ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.code === 200) {
+            modal.hide();
+            alert('保存成功');
+            location.reload();
+        } else {
+            alert(data.message || '保存失败');
+        }
+    });
+}
+
+function deleteBuilding(id) {
+    if (!confirm('确定要删除该楼栋吗？')) return;
+    
+    fetch(`/classroom/api/buildings/${id}`, {
+        method: 'DELETE'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.code === 200) {
+            alert('删除成功');
+            location.reload();
+        } else {
+            alert(data.message || '删除失败');
+        }
+    });
+}
+</script>
+{% endblock %}

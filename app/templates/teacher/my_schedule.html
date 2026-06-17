@@ -4,12 +4,17 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4">我的课表</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>我的课表</h2>
+        <button id="exportScheduleBtn" class="btn btn-success">
+            <i class="bi bi-download me-1"></i>导出课表(CSV)
+        </button>
+    </div>
     
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered text-center">
+                <table class="table table-bordered text-center schedule-table">
                     <thead class="table-light">
                         <tr>
                             <th style="width: 80px;">节次</th>
@@ -21,18 +26,20 @@
                     <tbody>
                         {% for period in range(1, 13) %}
                         <tr>
-                            <td class="align-middle">{{ period }}</td>
+                            <td class="align-middle font-weight-bold" style="height: 60px;">{{ period }}</td>
                             {% for day in range(1, 8) %}
                                 {% set course = schedule_table[period][day] %}
                                 {% if course %}
                                     {% if course.is_first %}
-                                    <td rowspan="{{ course.rowspan }}" class="align-middle bg-success text-white">
-                                        <strong>{{ course.course_name }}</strong><br>
-                                        <small>{{ course.classroom }}</small>
+                                    <td rowspan="{{ course.rowspan }}" class="align-middle course-cell" style="height: {{ course.rowspan * 60 }}px;">
+                                        <div class="course-info" data-bs-toggle="tooltip" data-bs-html="true" title="<strong>{{ course.course_name }}</strong><br>教室：{{ course.classroom }}">
+                                            <span class="course-name">{{ course.course_name }}</span><br>
+                                            <span class="course-classroom">{{ course.classroom }}</span>
+                                        </div>
                                     </td>
                                     {% endif %}
                                 {% else %}
-                                <td></td>
+                                <td style="height: 60px;"></td>
                                 {% endif %}
                             {% endfor %}
                         </tr>
@@ -43,4 +50,90 @@
         </div>
     </div>
 </div>
+
+<style>
+.schedule-table td, .schedule-table th {
+    min-width: 120px;
+    max-width: 150px;
+}
+
+.course-cell {
+    background-color: #198754;
+    color: white;
+    padding: 8px;
+    vertical-align: top !important;
+}
+
+.course-info {
+    cursor: pointer;
+}
+
+.course-name {
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.course-classroom {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.tooltip-inner {
+    max-width: 300px;
+    font-size: 14px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // 导出课表功能
+    document.getElementById('exportScheduleBtn').addEventListener('click', function() {
+        fetch('{{ url_for('teacher_bp.schedule_export_data') }}')
+            .then(response => response.json())
+            .then(data => {
+                // 生成CSV内容
+                let csvContent = '\uFEFF'; // UTF-8 BOM
+                
+                // 转义CSV字段（处理包含逗号、引号、换行的内容）
+                const escapeCsv = (value) => {
+                    if (value === null || value === undefined) return '';
+                    value = String(value);
+                    if (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes('\r')) {
+                        return '"' + value.replace(/"/g, '""') + '"';
+                    }
+                    return value;
+                };
+                
+                // 写入表头
+                csvContent += data.headers.map(escapeCsv).join(',') + '\n';
+                
+                // 写入数据行
+                data.rows.forEach(row => {
+                    csvContent += row.map(escapeCsv).join(',') + '\n';
+                });
+                
+                // 创建Blob对象
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', data.filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            })
+            .catch(error => {
+                alert('导出失败：' + error.message);
+            });
+    });
+});
+</script>
 {% endblock %}

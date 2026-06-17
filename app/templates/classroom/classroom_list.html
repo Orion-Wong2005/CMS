@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}教室管理 - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mt-4 mb-4">
+        <i class="bi bi-door-open"></i> 教室管理
+    </h2>
+    
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <span>教室列表</span>
+                <select class="form-select form-select-sm w-auto" onchange="filterByBuilding()">
+                    <option value="">全部楼栋</option>
+                    {% for building in buildings %}
+                    <option value="{{ building.id }}" {% if selected_building == building.id %}selected{% endif %}>
+                        {{ building.building_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('classroom_bp.building_list') }}" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-building"></i> 楼栋管理
+                </a>
+                <a href="{{ url_for('classroom_bp.classroom_add') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus"></i> 添加教室
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if classrooms %}
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>教室编号</th>
+                        <th>所属楼栋</th>
+                        <th>楼层</th>
+                        <th>容纳人数</th>
+                        <th>设备</th>
+                        <th>状态</th>
+                        <th>备注</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for classroom in classrooms %}
+                    <tr>
+                        <td>{{ classroom.classroom_code }}</td>
+                        <td>{{ classroom.building.building_name if classroom.building else '-' }}</td>
+                        <td>{{ classroom.floor or '-' }} 层</td>
+                        <td>{{ classroom.capacity }} 人</td>
+                        <td>
+                            {% if classroom.has_projector %}<span class="badge bg-info me-1">投影仪</span>{% endif %}
+                            {% if classroom.has_computer %}<span class="badge bg-success">电脑</span>{% endif %}
+                            {% if not classroom.has_projector and not classroom.has_computer %}-{% endif %}
+                        </td>
+                        <td>
+                            {% if classroom.status == 1 %}
+                            <span class="badge bg-success">可用</span>
+                            {% else %}
+                            <span class="badge bg-danger">不可用</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ classroom.description or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('classroom_bp.classroom_edit', classroom_id=classroom.id) }}" 
+                               class="btn btn-info btn-sm me-1">
+                                <i class="bi bi-pencil"></i> 编辑
+                            </a>
+                            <a href="{{ url_for('classroom_bp.classroom_delete', classroom_id=classroom.id) }}" 
+                               class="btn btn-danger btn-sm"
+                               onclick="return confirm('确定要删除该教室吗？')">
+                                <i class="bi bi-trash"></i> 删除
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-inbox display-4"></i>
+                <p class="mt-2">暂无教室数据</p>
+                <p class="text-sm">请先添加楼栋，再添加教室</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function filterByBuilding() {
+    var select = document.querySelector('select');
+    var buildingId = select.value;
+    if (buildingId) {
+        window.location.href = "{{ url_for('classroom_bp.classroom_list') }}?building_id=" + buildingId;
+    } else {
+        window.location.href = "{{ url_for('classroom_bp.classroom_list') }}";
+    }
+}
+</script>
+{% endblock %}

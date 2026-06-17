@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, session
+from flask import Blueprint, render_template, redirect, url_for, flash, session, request
 from app.extensions import db
-from app.models import Student, Course, Enrollment, Grade
+from app.models import Student, Course, Enrollment, Grade, Schedule
 from app.utils.decorators import student_required
 
 student_bp = Blueprint('student_bp', __name__, url_prefix='/student')
@@ -342,3 +342,273 @@ def my_schedule():
     return render_template('student/my_schedule.html',
                           schedule_table=schedule_table,
                           days=['周一', '周二', '周三', '周四', '周五', '周六', '周日'])
+
+# ==============================
+# 获取课表数据（用于前端导出）
+# ==============================
+@student_bp.route('/schedule/export/data')
+@student_required
+def schedule_export_data():
+    """获取课表数据（JSON格式，用于前端导出）"""
+    from flask import jsonify
+    
+    student = Student.query.filter_by(user_id=session['user_id']).first()
+    
+    # 查询学生所有已选课程的排课
+    enrollments = Enrollment.query.filter_by(
+        student_id=student.student_id,
+        status=1
+    ).all()
+    
+    # 构建课表矩阵（12节 x 7天）
+    schedule_matrix = [['' for _ in range(7)] for _ in range(12)]
+    
+    for enrollment in enrollments:
+        course = enrollment.course
+        schedules = Schedule.query.filter_by(course_id=course.course_id).all()
+        
+        for schedule in schedules:
+            day_idx = int(schedule.day_of_week) - 1  # 转换为0-6索引
+            start_period = int(schedule.start_time) - 1  # 转换为0-11索引
+            end_period = int(schedule.end_time) - 1
+            
+            # 在所有节次中填充课程信息
+            for period in range(start_period, end_period + 1):
+                if period < 12 and day_idx < 7:
+                    teacher_name = course.teacher.name if course.teacher else '未分配'
+                    schedule_matrix[period][day_idx] = f"{course.course_name}\n{teacher_name} - {schedule.classroom}"
+    
+    # 转换为行格式
+    days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    rows = []
+    
+    for period in range(12):
+        row = [f'第{period + 1}节']
+        for day in range(7):
+            row.append(schedule_matrix[period][day])
+        rows.append(row)
+    
+    return jsonify({
+        'filename': f'课表_{student.student_id}.csv',
+        'headers': ['节次', '周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+        'rows': rows
+    })
+
+# ==============================
+# 导出课表为CSV（直接下载）
+# ==============================
+@student_bp.route('/schedule/export')
+@student_required
+def export_schedule():
+    """导出课表为CSV文件（浏览器下载）"""
+    import csv
+    from io import StringIO
+    from flask import make_response
+    from urllib.parse import quote
+    
+    student = Student.query.filter_by(user_id=session['user_id']).first()
+    
+    # 查询学生所有已选课程的排课
+    enrollments = Enrollment.query.filter_by(
+        student_id=student.student_id,
+        status=1
+    ).all()
+    
+    # 获取所有排课信息
+    schedule_data = []
+    
+    for enrollment in enrollments:
+        course = enrollment.course
+        schedules = Schedule.query.filter_by(course_id=course.course_id).all()
+        
+        for schedule in schedules:
+            schedule_data.append({
+                'course_name': course.course_name,
+                'teacher': course.teacher.name if course.teacher else '未分配',
+                'classroom': schedule.classroom,
+                'day_of_week': ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'][schedule.day_of_week],
+                'start_time': schedule.start_time,
+                'end_time': schedule.end_time,
+                'credit': course.credit
+            })
+    
+    # 使用StringIO生成CSV内容（支持中文）
+    output = StringIO()
+    
+    # 创建CSV写入器
+    writer = csv.writer(output)
+    
+    # 写入表头
+    writer.writerow(['课程名称', '教师', '教室', '星期', '开始节次', '结束节次', '学分'])
+    
+    # 写入数据
+    for item in schedule_data:
+        writer.writerow([
+            item['course_name'],
+            item['teacher'],
+            item['classroom'],
+            item['day_of_week'],
+            item['start_time'],
+            item['end_time'],
+            item['credit']
+        ])
+    
+    # 获取CSV内容（添加BOM以支持Excel中文显示）
+    csv_content = '\ufeff' + output.getvalue()
+    
+    # 生成文件名（支持中文）
+    filename = f'课表_{student.student_id}.csv'
+    encoded_filename = quote(filename, encoding='utf-8')
+    
+    # 设置Content-Disposition头（同时支持filename和filename*）
+    content_disposition = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{encoded_filename}'
+    
+    # 创建响应
+    response = make_response(csv_content)
+    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    response.headers['Content-Disposition'] = content_disposition
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    return response
+
+# ==============================
+# 获取成绩数据（用于前端导出）
+# ==============================
+@student_bp.route('/grades/export/data')
+@student_required
+def grades_export_data():
+    """获取成绩数据（JSON格式，用于前端导出）"""
+    from flask import jsonify
+    
+    student = Student.query.filter_by(user_id=session['user_id']).first()
+    
+    # 查询所有有成绩的记录
+    grades = Grade.query.filter(
+        Grade.student_id == student.student_id,
+        Grade.grade.isnot(None)
+    ).all()
+    
+    # 计算成绩信息
+    rows = []
+    total_credit = 0
+    total_grade_point = 0
+    
+    for grade in grades:
+        course = Course.query.get(grade.course_id)
+        gpa = calculate_gpa(grade.grade)
+        
+        rows.append([
+            course.course_id,
+            course.course_name,
+            course.credit,
+            grade.grade,
+            gpa,
+            grade.remark or ''
+        ])
+        
+        if gpa is not None:
+            total_credit += course.credit
+            total_grade_point += gpa * course.credit
+    
+    gpa_avg = round(total_grade_point / total_credit, 2) if total_credit > 0 else 0
+    
+    return jsonify({
+        'filename': f'学分绩_{student.student_id}.csv',
+        'header_info': [
+            ['学号', student.student_id],
+            ['姓名', student.name],
+            ['平均绩点', gpa_avg]
+        ],
+        'headers': ['课程编号', '课程名称', '学分', '成绩', '绩点', '备注'],
+        'rows': rows
+    })
+
+# ==============================
+# 导出学分绩为CSV（直接下载）
+# ==============================
+@student_bp.route('/grades/export')
+@student_required
+def export_grades():
+    """导出学分绩为CSV文件（浏览器下载）"""
+    import csv
+    from io import StringIO
+    from flask import make_response
+    from urllib.parse import quote
+    
+    student = Student.query.filter_by(user_id=session['user_id']).first()
+    
+    # 查询所有有成绩的记录
+    grades = Grade.query.filter(
+        Grade.student_id == student.student_id,
+        Grade.grade.isnot(None)
+    ).all()
+    
+    # 计算成绩信息
+    grade_data = []
+    total_credit = 0
+    total_grade_point = 0
+    
+    for grade in grades:
+        course = Course.query.get(grade.course_id)
+        gpa = calculate_gpa(grade.grade)
+        
+        grade_data.append({
+            'course_name': course.course_name,
+            'course_id': course.course_id,
+            'credit': course.credit,
+            'grade': grade.grade,
+            'gpa': gpa,
+            'remark': grade.remark or ''
+        })
+        
+        if gpa is not None:
+            total_credit += course.credit
+            total_grade_point += gpa * course.credit
+    
+    gpa_avg = round(total_grade_point / total_credit, 2) if total_credit > 0 else 0
+    
+    # 使用StringIO生成CSV内容（支持中文）
+    output = StringIO()
+    
+    # 创建CSV写入器
+    writer = csv.writer(output)
+    
+    # 写入头部信息
+    writer.writerow(['学号', student.student_id])
+    writer.writerow(['姓名', student.name])
+    writer.writerow(['平均绩点', gpa_avg])
+    writer.writerow([])
+    writer.writerow(['课程编号', '课程名称', '学分', '成绩', '绩点', '备注'])
+    
+    # 写入成绩数据
+    for item in grade_data:
+        writer.writerow([
+            item['course_id'],
+            item['course_name'],
+            item['credit'],
+            item['grade'],
+            item['gpa'],
+            item['remark']
+        ])
+    
+    # 获取CSV内容（添加BOM以支持Excel中文显示）
+    csv_content = '\ufeff' + output.getvalue()
+    
+    # 生成文件名（支持中文）
+    filename = f'学分绩_{student.student_id}.csv'
+    encoded_filename = quote(filename, encoding='utf-8')
+    
+    # 设置Content-Disposition头（同时支持filename和filename*）
+    content_disposition = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{encoded_filename}'
+    
+    # 创建响应
+    response = make_response(csv_content)
+    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    response.headers['Content-Disposition'] = content_disposition
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    return response

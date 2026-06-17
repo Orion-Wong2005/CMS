@@ -6,3 +6,6 @@ from app.models.course import Course
 from app.models.enrollment import Enrollment
 from app.models.grade import Grade
 from app.models.schedule import Schedule
+from app.models.building import Building
+from app.models.classroom import Classroom
+from app.models.semester import Semester

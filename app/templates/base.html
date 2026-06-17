@@ -75,6 +75,18 @@
                                     <i class="bi bi-calendar3 me-1"></i>排课管理
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint and request.endpoint.startswith('classroom_bp') %}active{% endif %}" 
+                                   href="{{ url_for('classroom_bp.classroom_list') }}">
+                                    <i class="bi bi-building me-1"></i>教室管理
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint and request.endpoint.startswith('semester_bp') %}active{% endif %}" 
+                                   href="{{ url_for('semester_bp.semester_list') }}">
+                                    <i class="bi bi-calendar-month me-1"></i>学期管理
+                                </a>
+                            </li>
                         {% elif session.role == 'teacher' %}
                             <!-- 教师菜单 -->
                             <li class="nav-item">

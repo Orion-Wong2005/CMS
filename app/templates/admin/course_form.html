@@ -53,9 +53,15 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="semester" class="form-label">开课学期</label>
-                        <input type="text" class="form-control" id="semester" name="semester" 
-                               value="{{ course.semester if course else '2024-2025-1' }}" 
-                               placeholder="例如：2024-2025-1">
+                        <select class="form-select" id="semester" name="semester">
+                            <option value="">请选择学期</option>
+                            {% for sem in semesters %}
+                            <option value="{{ sem.name }}" 
+                                    {% if course and course.semester == sem.name %}selected{% endif %}>
+                                {{ sem.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
                 </div>
                 
@@ -66,9 +72,13 @@
                            value="{{ course.capacity if course else 60 }}">
                 </div>
                 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-info">保存</button>
-                    <a href="{{ url_for('admin_bp.course_list') }}" class="btn btn-secondary">取消</a>
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-info">
+                        <i class="bi bi-check-circle me-1"></i>保存
+                    </button>
+                    <a href="{{ url_for('admin_bp.course_list') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>返回列表
+                    </a>
                 </div>
             </form>
         </div>

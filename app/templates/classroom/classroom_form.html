@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if classroom %}编辑教室{% else %}添加教室{% endif %} - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mt-4 mb-4">
+        <i class="bi bi-door-open"></i> {% if classroom %}编辑教室{% else %}添加教室{% endif %}
+    </h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="classroom_code" class="form-label">教室编号 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="classroom_code" name="classroom_code" 
+                           value="{{ classroom.classroom_code if classroom else '' }}" 
+                           {% if classroom %}readonly{% endif %} required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="building_id" class="form-label">所属楼栋</label>
+                    <select class="form-select" id="building_id" name="building_id">
+                        <option value="">请选择楼栋</option>
+                        {% for building in buildings %}
+                        <option value="{{ building.id }}" 
+                                {% if classroom and classroom.building_id == building.id %}selected{% endif %}>
+                            {{ building.building_name }} ({{ building.building_code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col">
+                        <label for="floor" class="form-label">楼层</label>
+                        <input type="number" class="form-control" id="floor" name="floor" 
+                               value="{{ classroom.floor if classroom else '' }}" min="1">
+                    </div>
+                    <div class="col">
+                        <label for="capacity" class="form-label">容纳人数</label>
+                        <input type="number" class="form-control" id="capacity" name="capacity" 
+                               value="{{ classroom.capacity if classroom else 30 }}" min="1">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">设备配置</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="has_projector" name="has_projector"
+                               {% if classroom and classroom.has_projector %}checked{% endif %}>
+                        <label class="form-check-label" for="has_projector">
+                            投影仪
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="has_computer" name="has_computer"
+                               {% if classroom and classroom.has_computer %}checked{% endif %}>
+                        <label class="form-check-label" for="has_computer">
+                            电脑
+                        </label>
+                    </div>
+                </div>
+                
+                {% if classroom %}
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="status" name="status"
+                               {% if classroom.status == 1 %}checked{% endif %}>
+                        <label class="form-check-label" for="status">
+                            启用教室
+                        </label>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">备注</label>
+                    <textarea class="form-control" id="description" name="description" rows="3">
+                        {{ classroom.description if classroom else '' }}
+                    </textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> 保存
+                </button>
+                <a href="{{ url_for('classroom_bp.classroom_list') }}" class="btn btn-secondary ms-2">
+                    <i class="bi bi-arrow-left"></i> 返回
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

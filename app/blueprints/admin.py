@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from app.extensions import db
-from app.models import User, Student, Teacher, Course, Schedule
+from app.models import User, Student, Teacher, Course, Schedule, Classroom, Semester
 from app.utils.decorators import admin_required
 from app.utils.md5 import md5_encrypt
 
@@ -248,6 +248,7 @@ def course_list():
 def course_add():
     """添加课程"""
     teachers = Teacher.query.all()
+    semesters = Semester.query.filter_by(status=1).all()
     
     if request.method == 'POST':
         course_id = request.form.get('course_id', '').strip()
@@ -260,11 +261,11 @@ def course_add():
         
         if not course_id or not course_name or not credit or not hours:
             flash('课程编号、名称、学分、学时不能为空', 'danger')
-            return render_template('admin/course_form.html', teachers=teachers)
+            return render_template('admin/course_form.html', teachers=teachers, semesters=semesters)
         
         if Course.query.get(course_id):
             flash('该课程编号已存在', 'danger')
-            return render_template('admin/course_form.html', teachers=teachers)
+            return render_template('admin/course_form.html', teachers=teachers, semesters=semesters)
         
         try:
             course = Course(
@@ -285,7 +286,7 @@ def course_add():
             db.session.rollback()
             flash(f'添加失败：{str(e)}', 'danger')
     
-    return render_template('admin/course_form.html', teachers=teachers)
+    return render_template('admin/course_form.html', teachers=teachers, semesters=semesters)
 
 @admin_bp.route('/courses/edit/<string:course_id>', methods=['GET', 'POST'])
 @admin_required
@@ -293,6 +294,7 @@ def course_edit(course_id):
     """编辑课程"""
     course = Course.query.get_or_404(course_id)
     teachers = Teacher.query.all()
+    semesters = Semester.query.filter_by(status=1).all()
     
     if request.method == 'POST':
         course.course_name = request.form.get('course_name', '').strip()
@@ -310,7 +312,7 @@ def course_edit(course_id):
             db.session.rollback()
             flash(f'更新失败：{str(e)}', 'danger')
     
-    return render_template('admin/course_form.html', course=course, teachers=teachers)
+    return render_template('admin/course_form.html', course=course, teachers=teachers, semesters=semesters)
 
 @admin_bp.route('/courses/delete/<string:course_id>')
 @admin_required
@@ -335,8 +337,34 @@ def course_delete(course_id):
 @admin_bp.route('/schedules')
 @admin_required
 def schedule_list():
-    """排课列表"""
-    schedules = Schedule.query.all()
+    """排课列表（支持搜索）"""
+    # 获取搜索参数
+    course_search = request.args.get('course_search', '').strip()
+    classroom_search = request.args.get('classroom_search', '').strip()
+    day_of_week = request.args.get('day_of_week', '').strip()
+    
+    # 构建查询
+    query = Schedule.query.join(Course)
+    
+    # 课程搜索（支持课程编号或名称）
+    if course_search:
+        query = query.filter(
+            (Course.course_id.like(f'%{course_search}%')) | 
+            (Course.course_name.like(f'%{course_search}%'))
+        )
+    
+    # 教室搜索
+    if classroom_search:
+        query = query.filter(Schedule.classroom.like(f'%{classroom_search}%'))
+    
+    # 星期筛选
+    if day_of_week:
+        try:
+            query = query.filter(Schedule.day_of_week == int(day_of_week))
+        except ValueError:
+            pass
+    
+    schedules = query.all()
     return render_template('admin/schedule_list.html', schedules=schedules)
 
 @admin_bp.route('/schedules/add', methods=['GET', 'POST'])
@@ -344,6 +372,7 @@ def schedule_list():
 def schedule_add():
     """添加排课"""
     courses = Course.query.all()
+    classrooms = Classroom.query.filter_by(status=1).all()  # 只获取可用的教室
     
     if request.method == 'POST':
         course_id = request.form.get('course_id', '').strip()
@@ -355,7 +384,7 @@ def schedule_add():
         # 表单验证
         if not course_id or not day_of_week or not start_time or not end_time or not classroom:
             flash('所有字段不能为空', 'danger')
-            return render_template('admin/schedule_form.html', courses=courses)
+            return render_template('admin/schedule_form.html', courses=courses, classrooms=classrooms)
         
         try:
             day_of_week = int(day_of_week)
@@ -363,14 +392,14 @@ def schedule_add():
                 raise ValueError
         except ValueError:
             flash('星期必须是1-7之间的数字', 'danger')
-            return render_template('admin/schedule_form.html', courses=courses)
+            return render_template('admin/schedule_form.html', courses=courses, classrooms=classrooms)
         
         # 冲突检查
         course = Course.query.get(course_id)
         conflict = check_schedule_conflict(course_id, day_of_week, start_time, end_time, classroom, course.teacher_id)
         if conflict:
             flash(conflict, 'danger')
-            return render_template('admin/schedule_form.html', courses=courses)
+            return render_template('admin/schedule_form.html', courses=courses, classrooms=classrooms)
         
         try:
             schedule = Schedule(
@@ -389,7 +418,7 @@ def schedule_add():
             db.session.rollback()
             flash(f'添加失败：{str(e)}', 'danger')
     
-    return render_template('admin/schedule_form.html', courses=courses)
+    return render_template('admin/schedule_form.html', courses=courses, classrooms=classrooms)
 
 @admin_bp.route('/schedules/edit/<int:schedule_id>', methods=['GET', 'POST'])
 @admin_required
@@ -397,6 +426,7 @@ def schedule_edit(schedule_id):
     """编辑排课"""
     schedule = Schedule.query.get_or_404(schedule_id)
     courses = Course.query.all()
+    classrooms = Classroom.query.filter_by(status=1).all()  # 只获取可用的教室
     
     if request.method == 'POST':
         course_id = request.form.get('course_id', '').strip()
@@ -408,7 +438,7 @@ def schedule_edit(schedule_id):
         # 表单验证
         if not course_id or not day_of_week or not start_time or not end_time or not classroom:
             flash('所有字段不能为空', 'danger')
-            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses)
+            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses, classrooms=classrooms)
         
         try:
             day_of_week = int(day_of_week)
@@ -416,7 +446,7 @@ def schedule_edit(schedule_id):
                 raise ValueError
         except ValueError:
             flash('星期必须是1-7之间的数字', 'danger')
-            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses)
+            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses, classrooms=classrooms)
         
         # 冲突检查（排除当前排课）
         course = Course.query.get(course_id)
@@ -425,7 +455,7 @@ def schedule_edit(schedule_id):
         )
         if conflict:
             flash(conflict, 'danger')
-            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses)
+            return render_template('admin/schedule_form.html', schedule=schedule, courses=courses, classrooms=classrooms)
         
         try:
             schedule.course_id = course_id
@@ -441,7 +471,7 @@ def schedule_edit(schedule_id):
             db.session.rollback()
             flash(f'更新失败：{str(e)}', 'danger')
     
-    return render_template('admin/schedule_form.html', schedule=schedule, courses=courses)
+    return render_template('admin/schedule_form.html', schedule=schedule, courses=courses, classrooms=classrooms)
 
 @admin_bp.route('/schedules/delete/<int:schedule_id>')
 @admin_required
@@ -466,34 +496,46 @@ def check_schedule_conflict(course_id, day_of_week, start_time, end_time, classr
     """
     检查排课冲突
     返回冲突信息，无冲突返回None
+    时间段冲突判断：新课程的时间段与已有课程时间段有重叠即为冲突
     """
-    # 1. 检查同一教室同一时间是否有其他课程
+    # 转换为整数便于比较
+    try:
+        new_start = int(start_time)
+        new_end = int(end_time)
+    except ValueError:
+        return "时间格式错误"
+    
+    # 1. 检查同一教室同一时间是否有冲突（时间段重叠）
     classroom_conflict = Schedule.query.filter(
         Schedule.classroom == classroom,
         Schedule.day_of_week == day_of_week,
-        Schedule.start_time == start_time,
-        Schedule.end_time == end_time
+        # 时间段重叠条件：新开始 < 已有结束 且 新结束 > 已有开始
+        Schedule.start_time.cast(db.Integer) < new_end,
+        Schedule.end_time.cast(db.Integer) > new_start
     )
     if exclude_id:
         classroom_conflict = classroom_conflict.filter(Schedule.id != exclude_id)
     
     if classroom_conflict.first():
-        return f"教室 {classroom} 在周{day_of_week} {start_time}-{end_time} 已有课程安排"
+        existing = classroom_conflict.first()
+        return f"教室 {classroom} 在周{day_of_week} {existing.start_time}-{existing.end_time} 已有课程安排，与 {start_time}-{end_time} 冲突"
     
-    # 2. 检查同一教师同一时间是否有其他课程
+    # 2. 检查同一教师同一时间是否有冲突（时间段重叠）
     if teacher_id:
         teacher_conflict = Schedule.query.join(
             Course, Course.course_id == Schedule.course_id
         ).filter(
             Course.teacher_id == teacher_id,
             Schedule.day_of_week == day_of_week,
-            Schedule.start_time == start_time,
-            Schedule.end_time == end_time
+            # 时间段重叠条件
+            Schedule.start_time.cast(db.Integer) < new_end,
+            Schedule.end_time.cast(db.Integer) > new_start
         )
         if exclude_id:
             teacher_conflict = teacher_conflict.filter(Schedule.id != exclude_id)
         
         if teacher_conflict.first():
-            return f"该教师在周{day_of_week} {start_time}-{end_time} 已有其他课程安排"
+            existing = teacher_conflict.first()
+            return f"该教师在周{day_of_week} {existing.start_time}-{existing.end_time} 已有课程安排，与 {start_time}-{end_time} 冲突"
     
     return None

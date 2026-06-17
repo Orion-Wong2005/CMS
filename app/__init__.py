@@ -20,6 +20,8 @@ def create_app(config_class=Config):
     from app.blueprints.enrollment import enrollment_bp
     from app.blueprints.grade import grade_bp
     from app.blueprints.schedule import schedule_bp
+    from app.blueprints.classroom import classroom_bp
+    from app.blueprints.semester import semester_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -29,6 +31,8 @@ def create_app(config_class=Config):
     app.register_blueprint(enrollment_bp, url_prefix='/enrollment')
     app.register_blueprint(grade_bp, url_prefix='/grade')
     app.register_blueprint(schedule_bp, url_prefix='/schedule')
+    app.register_blueprint(classroom_bp, url_prefix='/classroom')
+    app.register_blueprint(semester_bp, url_prefix='/semester')
 
     # ==============================
     # 全局错误处理器

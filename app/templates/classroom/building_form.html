@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if building %}编辑楼栋{% else %}添加楼栋{% endif %} - 课程管理系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mt-4 mb-4">
+        <i class="bi bi-building"></i> {% if building %}编辑楼栋{% else %}添加楼栋{% endif %}
+    </h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="building_code" class="form-label">楼栋编号 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="building_code" name="building_code" 
+                           value="{{ building.building_code if building else '' }}" 
+                           {% if building %}readonly{% endif %} required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="building_name" class="form-label">楼栋名称 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="building_name" name="building_name" 
+                           value="{{ building.building_name if building else '' }}" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="campus" class="form-label">校区</label>
+                    <input type="text" class="form-control" id="campus" name="campus" 
+                           value="{{ building.campus if building else '' }}">
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col">
+                        <label for="min_floor" class="form-label">最低楼层</label>
+                        <input type="number" class="form-control" id="min_floor" name="min_floor" 
+                               value="{{ building.min_floor if building else 1 }}" min="1">
+                    </div>
+                    <div class="col">
+                        <label for="max_floor" class="form-label">最高楼层</label>
+                        <input type="number" class="form-control" id="max_floor" name="max_floor" 
+                               value="{{ building.max_floor if building else 5 }}" min="1">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">备注</label>
+                    <textarea class="form-control" id="description" name="description" rows="3">
+                        {{ building.description if building else '' }}
+                    </textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> 保存
+                </button>
+                <a href="{{ url_for('classroom_bp.building_list') }}" class="btn btn-secondary ms-2">
+                    <i class="bi bi-arrow-left"></i> 返回
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

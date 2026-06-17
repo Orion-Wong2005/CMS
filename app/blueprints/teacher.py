@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from io import BytesIO
 from openpyxl import Workbook
 from app.extensions import db
-from app.models import Teacher, Course, Enrollment, Grade
+from app.models import Teacher, Course, Enrollment, Grade, Schedule
 from app.utils.decorators import teacher_required
 
 teacher_bp = Blueprint('teacher_bp', __name__, url_prefix='/teacher')
@@ -407,3 +407,123 @@ def my_schedule():
     return render_template('teacher/my_schedule.html',
                           schedule_table=schedule_table,
                           days=['周一', '周二', '周三', '周四', '周五', '周六', '周日'])
+
+# ==============================
+# 获取教师课表数据（用于前端导出）
+# ==============================
+@teacher_bp.route('/schedule/export/data')
+@teacher_required
+def schedule_export_data():
+    """获取教师课表数据（JSON格式，用于前端导出）"""
+    from flask import jsonify
+    
+    teacher = Teacher.query.filter_by(user_id=session['user_id']).first()
+    
+    # 查询教师所有教授课程的排课
+    courses = Course.query.filter_by(teacher_id=teacher.teacher_id).all()
+    
+    # 构建课表矩阵（12节 x 7天）
+    schedule_matrix = [['' for _ in range(7)] for _ in range(12)]
+    
+    for course in courses:
+        schedules = Schedule.query.filter_by(course_id=course.course_id).all()
+        
+        for schedule in schedules:
+            day_idx = int(schedule.day_of_week) - 1  # 转换为0-6索引
+            start_period = int(schedule.start_time) - 1  # 转换为0-11索引
+            end_period = int(schedule.end_time) - 1
+            
+            # 在所有节次中填充课程信息
+            for period in range(start_period, end_period + 1):
+                if period < 12 and day_idx < 7:
+                    schedule_matrix[period][day_idx] = f"{course.course_name}\n{schedule.classroom}"
+    
+    # 转换为行格式
+    rows = []
+    
+    for period in range(12):
+        row = [f'第{period + 1}节']
+        for day in range(7):
+            row.append(schedule_matrix[period][day])
+        rows.append(row)
+    
+    return jsonify({
+        'filename': f'教师课表_{teacher.teacher_id}.csv',
+        'headers': ['节次', '周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+        'rows': rows
+    })
+
+# ==============================
+# 导出教师课表为CSV（直接下载）
+# ==============================
+@teacher_bp.route('/schedule/export')
+@teacher_required
+def export_schedule():
+    """导出教师课表为CSV文件（浏览器下载）"""
+    import csv
+    from io import StringIO
+    from flask import make_response
+    from urllib.parse import quote
+    
+    teacher = Teacher.query.filter_by(user_id=session['user_id']).first()
+    
+    # 查询教师所有教授课程的排课
+    courses = Course.query.filter_by(teacher_id=teacher.teacher_id).all()
+    
+    # 获取所有排课信息
+    schedule_data = []
+    
+    for course in courses:
+        schedules = Schedule.query.filter_by(course_id=course.course_id).all()
+        
+        for schedule in schedules:
+            schedule_data.append({
+                'course_name': course.course_name,
+                'course_id': course.course_id,
+                'classroom': schedule.classroom,
+                'day_of_week': ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'][schedule.day_of_week],
+                'start_time': schedule.start_time,
+                'end_time': schedule.end_time,
+                'credit': course.credit
+            })
+    
+    # 使用StringIO生成CSV内容（支持中文）
+    output = StringIO()
+    
+    # 创建CSV写入器
+    writer = csv.writer(output)
+    
+    # 写入表头
+    writer.writerow(['课程编号', '课程名称', '教室', '星期', '开始节次', '结束节次', '学分'])
+    
+    # 写入数据
+    for item in schedule_data:
+        writer.writerow([
+            item['course_id'],
+            item['course_name'],
+            item['classroom'],
+            item['day_of_week'],
+            item['start_time'],
+            item['end_time'],
+            item['credit']
+        ])
+    
+    # 获取CSV内容（添加BOM以支持Excel中文显示）
+    csv_content = '\ufeff' + output.getvalue()
+    
+    # 生成文件名（支持中文）
+    filename = f'教师课表_{teacher.teacher_id}.csv'
+    encoded_filename = quote(filename, encoding='utf-8')
+    
+    # 设置Content-Disposition头（同时支持filename和filename*）
+    content_disposition = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{encoded_filename}'
+    
+    # 创建响应
+    response = make_response(csv_content)
+    response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    response.headers['Content-Disposition'] = content_disposition
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    return response
