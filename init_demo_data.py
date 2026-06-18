@@ -39,8 +39,8 @@ def init_data():
         
         # 2. 创建两栋教学楼
         buildings_data = [
-            {'code': 'A', 'name': '虚拟综合楼A'},
-            {'code': 'N', 'name': '虚拟综合楼N'}
+            {'code': 'VA', 'name': '虚拟综合楼A'},
+            {'code': 'VN', 'name': '虚拟综合楼N'}
         ]
         
         for b_data in buildings_data:
@@ -57,9 +57,10 @@ def init_data():
                 db.session.flush()
                 
                 # 为每栋楼创建教室：-2到10层，每层20个教室
-                # 教室编码规则：V(虚拟) + 楼号 + 层数 + 计数码
+                # 教室编码规则：楼号 + 层数 + 计数码
                 # 例如：VA1001 = 虚拟A楼10层1号教室，VB201 = 虚拟A楼地下2层1号教室
                 for floor in range(-2, 11):  # -2 到 10
+                    if floor == 0 : continue
                     for room_num in range(1, 21):  # 每层20个教室
                         # 处理楼层编码
                         if floor < 0:
@@ -69,8 +70,8 @@ def init_data():
                             # 正楼层直接用数字（两位数，不足补0）
                             floor_str = f"{floor:02d}"
                         
-                        # 教室编码：V + 楼号 + 楼层 + 计数码(两位)
-                        room_code = f"V{b_data['code']}{floor_str}{room_num:02d}"
+                        # 教室编码：楼号 + 楼层 + 计数码(两位)
+                        room_code = f"{b_data['code']}{floor_str}{room_num:02d}"
                         
                         # 检查是否已存在
                         if not Classroom.query.filter_by(classroom_code=room_code).first():
@@ -79,8 +80,8 @@ def init_data():
                                 building_id=building.id,
                                 floor=floor,
                                 capacity=50,
-                                has_projector=(room_num % 3 == 0),  # 每3个教室有投影仪
-                                has_computer=(room_num % 4 == 0),   # 每4个教室有电脑
+                                has_projector=1,  # 每3个教室有投影仪
+                                has_computer=1,   # 每4个教室有电脑
                                 status=1,
                                 description='系统初始化创建'
                             )
@@ -88,7 +89,7 @@ def init_data():
                 
                 db.session.commit()
                 print(f"✓ 楼栋 '{b_data['name']}' 已创建，包含 {(10 - (-2) + 1) * 20} 个教室")
-                print(f"  教室编码示例：VA0101(A楼1层1号), VA1001(A楼10层1号), VB201(A楼地下2层1号)")
+                print(f"  教室编码示例：VA0101(VA楼1层1号), VA1001(VA楼10层1号), VB201(VA楼地下2层1号)")
             else:
                 print(f"ℹ 楼栋 '{b_data['name']}' 已存在")
         
