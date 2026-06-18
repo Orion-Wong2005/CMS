@@ -58,5 +58,32 @@ def create_app(config_class=Config):
     def internal_server_error(error):
         """500 服务器内部错误"""
         return render_template('common/500.html'), 500
-        
+    
+    # ==============================
+    # 初始化管理员账户
+    # ==============================
+    with app.app_context():
+        _init_admin_user()
+    
     return app
+
+
+def _init_admin_user():
+    """检测并初始化管理员账户"""
+    from app.models import User
+    
+    try:
+        # 检查admin用户是否存在
+        admin = User.query.filter_by(username='admin').first()
+        if not admin:
+            admin = User(
+                username='admin',
+                password='21232f297a57a5a743894a0e4a801fc3',
+                role='admin'
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print('✓ 管理员账户已自动创建: admin / admin')
+    except Exception as e:
+        db.session.rollback()
+        print(f'✗ 初始化管理员账户失败: {str(e)}')
