@@ -67,8 +67,8 @@
 | 依赖包 | 版本 | 说明 |
 |--------|------|------|
 | Flask | 3.1.3 | Web 框架 |
-| Flask-SQLAlchemy | 3.1.1 | ORM 框架 |
-| Flask-Migrate | 4.1.0 | 数据库迁移 |
+| Flask-SQLAlchemy | 3.1.2 | ORM 框架 |
+| Flask-Migrate | 4.1.1 | 数据库迁移 |
 | PyMySQL | 1.2.0 | MySQL 驱动 |
 | Werkzeug | 3.1.8 | WSGI 工具 |
 | Jinja2 | 3.1.6 | 模板引擎 |
@@ -77,8 +77,8 @@
 
 | 依赖包 | 版本 | 说明 |
 |--------|------|------|
-| SQLAlchemy | 2.0.31 | ORM 核心 |
-| alembic | 1.13.1 | 数据库迁移工具 |
+| SQLAlchemy | 2.0.50 | ORM 核心 |
+| alembic | 1.13.2 | 数据库迁移工具 |
 | itsdangerous | 2.2.0 | 安全工具 |
 | click | 8.1.7 | CLI 工具 |
 | blinker | 1.9.0 | 信号库 |
